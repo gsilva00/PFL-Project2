@@ -1,8 +1,7 @@
 :- consult(io).
 
 
-player(Name, Level).
-config(Width,Length,Level1,Level2).
+config(Width, Length, Level1, Level2).
 
 % GAME START
 play :-
@@ -12,7 +11,7 @@ play :-
   choose_players_names(Gamemode, Player1Name, Player2Name),
   choose_first_player(Gamemode, Player1Name, Player2Name, FirstPlayerName),
   choose_board_size(Width, Length),
-  initial_state(config(Width, Length, player(Player1Name, Level1), player(Player2Name, Level2), FirstPlayerName), GameState),
+  initial_state(config(Width, Length, Player1Name-Level1, Player2Name-Level2, FirstPlayerName), GameState),
   clear.
 
 
