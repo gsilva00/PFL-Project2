@@ -87,5 +87,7 @@ clear_console :-
 [format predicate](https://sicstus.sics.se/sicstus/docs/4.9.0/html/sicstus/mpg_002dref_002dformat.html)
 [between library](https://sicstus.sics.se/sicstus/docs/latest/html/sicstus.html/lib_002dbetween.html)
 [consult predicate](https://sicstus.sics.se/sicstus/docs/3.7.1/html/sicstus_8.html)
+[lists library](https://sicstus.sics.se/sicstus/docs/4.9.0/html/sicstus/lib_002dlists.html)
+[Understanding input tools](https://sicstus.sics.se/sicstus/docs/4.9.0/html/sicstus/ref_002diou_002dcin.html)
 
 > List of books, papers, web pages and other resources used during the development of the assignment. If you used tools such as ChatGPT, list the queries used.
