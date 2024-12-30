@@ -14,10 +14,10 @@ get_menu_choice(ChoiceText, Min, Max, Input) :-
 
 % read_until_between(+Min, +Max, -Value)
 %% Reads a number until it is between Min and Max
-read_until_between(Min, Max, Value) :-
+read_until_between(Min, Max, Input) :-
   repeat,
-  read_number(Value),
-  between(Min, Max, Value),
+  read_number(Input),
+  between(Min, Max, Input),
   !. % Not read another number after a valid one
 
 % read_number(-X)
@@ -39,6 +39,23 @@ process_codes([C|Rest], Acc, X) :-
   Acc1 is Acc*10 + (C-48),
   process_codes(Rest, Acc1, X).
 process_codes(_, Acc, Acc). % Stop processing when a non-digit is encountered or the list is empty
+
+
+% get_turtle_choice(+ChoiceText, +Turtles, -Input)
+%% Prompts the user to choose a turtle from the list of Turtles
+%% Special case of get_menu_choice/4 - with a list of options instead of a range
+get_turtle_choice(ChoiceText, Turtles, Input) :-
+  format('~a: ', [ChoiceText]),
+  read_until_member(Turtles, Input).
+
+% read_until_member(+List, -Input)
+%% Reads a number until it is a member of List
+read_until_member(List, Input) :-
+  repeat,
+  read_number(Input),
+  member(Input, List),
+  !. % Not read another number after a valid one
+
 
 
 % STRING INPUT
@@ -67,12 +84,19 @@ read_string_aux(Acc, true, Str) :-
   atom_chars(Str, Reversed). % Convert char list to atom (as it is only used for printing)
 
 
+
 % UTILITIES
 
 % get_menu_choice_ln(+ChoiceText, +Min, +Max, -Input)
 %% Same as get_menu_choice/4, but writes a newline after the prompt (better readability/user experience)
 get_menu_choice_ln(ChoiceText, Min, Max, Input) :-
   get_menu_choice(ChoiceText, Min, Max, Input),
+  nl.
+
+% get_turtle_choice_ln(+ChoiceText, +Turtles, -Input)
+%% Same as get_turtle_choice/3, but writes a newline after the prompt (better readability/user experience)
+get_turtle_choice_ln(ChoiceText, Turtles, Input) :-
+  get_turtle_choice(ChoiceText, Turtles, Input),
   nl.
 
 % get_string_ln(+ChoiceText, -Input)
@@ -84,8 +108,9 @@ get_string_ln(ChoiceText, Input) :-
 % write_ln(+X)
 %% Writes X to the console followed by a newline (avoiding the need to write '\n' all the time - boilerplate)
 %% As it exists in other Prolog implementations, but not in SICStus
-writeln(X) :-
-  write(X), nl.
+write_ln(X) :-
+  write(X),
+  nl.
 
 % clear_buffer/0
 %% Clears the input buffer
