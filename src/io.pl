@@ -41,22 +41,6 @@ process_codes([C|Rest], Acc, X) :-
 process_codes(_, Acc, Acc). % Stop processing when a non-digit is encountered or the list is empty
 
 
-% get_turtle_choice(+ChoiceText, +Turtles, -Input)
-%% Prompts the user to choose a turtle from the list of Turtles
-%% Special case of get_menu_choice/4 - with a list of options instead of a range
-get_turtle_choice(ChoiceText, Turtles, Input) :-
-  format('~a: ', [ChoiceText]),
-  read_until_member(Turtles, Input).
-
-% read_until_member(+List, -Input)
-%% Reads a number until it is a member of List
-read_until_member(List, Input) :-
-  repeat,
-  read_number(Input),
-  member(Input, List),
-  !. % Not read another number after a valid one
-
-
 
 % STRING INPUT
 
@@ -91,12 +75,6 @@ read_string_aux(Acc, true, Str) :-
 %% Same as get_menu_choice/4, but writes a newline after the prompt (better readability/user experience)
 get_menu_choice_ln(ChoiceText, Min, Max, Input) :-
   get_menu_choice(ChoiceText, Min, Max, Input),
-  nl.
-
-% get_turtle_choice_ln(+ChoiceText, +Turtles, -Input)
-%% Same as get_turtle_choice/3, but writes a newline after the prompt (better readability/user experience)
-get_turtle_choice_ln(ChoiceText, Turtles, Input) :-
-  get_turtle_choice(ChoiceText, Turtles, Input),
   nl.
 
 % get_string_ln(+ChoiceText, -Input)

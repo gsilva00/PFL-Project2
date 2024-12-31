@@ -157,12 +157,9 @@ choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-_,
   display_turn(Turn, Player1Name, Player2Name),
   valid_moves(game_state(_, Nest1-Nest2, Board, Scored1-Scored2, _-_, _-_), ListOfMoves),
   display_moves(ListOfMoves),
-  get_playable_turtles(ListOfMoves, Turtles),
-  display_turtle_to_move(Turtles),
-  get_turtle_choice_ln('Option', Turtles, Turtle),
-  display_direction_to_move,
-  get_menu_choice_ln('Option', 1, 4, Input),
-  direction(Input, Direction).
+  length(ListOfMoves, NumOfMoves),
+  get_menu_choice_ln('Option', 1, NumOfMoves, Input),
+  nth1(Input, ListOfMoves, Turtle-Direction).
 
 % Choose easy computer player's move
 %% TODO
