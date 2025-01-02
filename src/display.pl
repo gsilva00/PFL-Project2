@@ -57,9 +57,9 @@ display_board(Board).
 
 % display_score(+Player1Name, +Player2Name, +Scored1, +Scored2)
 display_score(Player1Name, Player2Name, Scored1, Scored2) :-
-  length(Scored1, Turtle1Num),
-  length(Scored2, Turtle2Num),
-  format('Score:~n - ~w: ~d turtles scored~n - ~w: ~d turtles scored~n', [Player1Name, Turtle1Num, Player2Name, Turtle2Num]).
+  length(Scored1, NumTurtles1),
+  length(Scored2, NumTurtles2),
+  format('Score:~n - ~w: ~d turtles scored~n - ~w: ~d turtles scored~n', [Player1Name, NumTurtles1, Player2Name, NumTurtles2]).
 
 % display_nests(+Player1Name, +Player2Name, +Nest1, +Nest2)
 display_nests(Player1Name, Player2Name, Nest1, Nest2) :-
@@ -73,14 +73,19 @@ display_nests(Player1Name, Player2Name, Nest1, Nest2) :-
 display_list([]) :-
   writeln('None').
 display_list([H|T]) :-
-  format('Turtle ~w~n', [H]),
+  translate_turtle(H, Code),
+  format('Turtle ~w~n', [Code]),
   display_list(T).
 
 % display_turn(+Turn, +Player1Name, +Player2Name)
-display_turn(1, Player1Name, _) :-
+display_turn(1, Player1Name-human, _) :-
   format('It is ~w\'s turn!~n', [Player1Name]).
-display_turn(2, _, Player2Name) :-
+display_turn(1, Player1Name-Player1Level, _) :-
+  format('It is ~w\'s turn! (Difficulty: ~w)~n', [Player1Name, Player1Level]).
+display_turn(2, _, Player2Name-human) :-
   format('It is ~w\'s turn!~n', [Player2Name]).
+display_turn(2, _, Player2Name-Player2Level) :-
+  format('It is ~w\'s turn! (Difficulty: ~w)~n', [Player2Name, Player2Level]).
 
 
 % display_turtle_to_move

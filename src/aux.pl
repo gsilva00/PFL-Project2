@@ -33,8 +33,8 @@ combined_weight(TurtleStack, Weight) :-
   combined_weight_aux(TurtleStack, 0, Weight).
 
 combined_weight_aux([], Acc, Acc).
-combined_weight_aux([Turtle|Rest], Acc, Weight) :-
-  NewAcc is Acc + Turtle,
+combined_weight_aux([(_-Number)|Rest], Acc, Weight) :-
+  NewAcc is Acc + Number,
   combined_weight_aux(Rest, NewAcc, Weight).
 
 
@@ -98,12 +98,12 @@ turtle_in_cell(Board, RowNum, ColNum, Turtle) :-
 %% Turtle is lighter than the top turtle of the stack
 cell_can_climb(Board, RowNum, ColNum, Turtle) :-
   cell_at(Board, RowNum, ColNum, [TopTurtle|_]),
-  turtle_climb(Turtle, TopTurtle).
+  turtle_can_climb(Turtle, TopTurtle).
 
-% turtle_climb(+Turtle, +TargetTurtle)
+% turtle_can_climb(+Turtle, +TargetTurtle)
 %% Check if the turtle can climb the target turtle
-turtle_climb(Turtle, TargetTurtle) :-
-  Turtle < TargetTurtle.
+turtle_can_climb((_-Number), (_-TargetNumber)) :-
+  Number < TargetNumber.
 
 
 % cell_can_push(+Board, +RowNum, +ColNum, +Turtle)
@@ -113,40 +113,40 @@ cell_can_push(Board, RowNum, ColNum, Turtle) :-
   cell_at(Board, RowNum, ColNum, TurtleStack),
   length(TurtleStack, StackLength),
   nth1(StackLength, TurtleStack, BaseTurtle), % Base turtle is the last turtle in the stack
-  turtle_push(Turtle, BaseTurtle, TurtleStack).
+  turtle_can_push(Turtle, BaseTurtle, TurtleStack).
 
-% turtle_push(+Turtle, +TargetTurtle, +TurtleStack)
-%% Check if the turtle can push the stack
-%% Turtle stack is push if the combined weight of the stack (base turtle included) is less than the turtle
-turtle_push(Turtle, _, TurtleStack) :-
+% turtle_can_push(+Turtle, +TargetTurtle, +TurtleStack)
+%% Check if the Turtle can push the stack
+%% Turtle stack is pushable if the combined weight of the stack (base turtle included) is less than the turtle
+turtle_can_push((_-Number), _, TurtleStack) :-
   combined_weight(TurtleStack, Weight),
-  Turtle >= Weight.
+  Number >= Weight.
 
 % cell_can_climb_push(+Board, +RowNum, +ColNum, +Turtle)
 %% Check if the turtle can climb the stack and push what's above it at the specified cell
 cell_can_climb_push(Board, RowNum, ColNum, Turtle) :-
   cell_at(Board, RowNum, ColNum, TurtleStack),
-  stack_climb_push(Turtle, TurtleStack, []),
+  stack_can_climb_push(Turtle, TurtleStack, []),
 
-% stack_climb_push(+Turtle, +Stack, +CheckedStack)
+% stack_can_climb_push(+Turtle, +Stack, +CheckedStack)
 %% Check if any turtle in the stack is climbable and pushable (from the top to the bottom) by Turtle
 %% Follows "resolving movement methodically" section of the game rules
 %% TODO CHANGE THIS DESCRIPTION VVVVVVVVV
 %% CheckedStack contains the stack that has been checked so far
 %% - i.e. the stack above the current turtle being checked - useful for weight calculation
 %% - at the end, the stack that needs to be moved is in CheckedStack
-stack_climb_push(_, [], _).
-stack_climb_push(Turtle, [TopTurtle|Rest], CheckedStack) :-
-  turtle_climb(Turtle, TopTurtle),
-  turtle_push(Turtle, TopTurtle, CheckedStack),
+stack_can_climb_push(_, [], _).
+stack_can_climb_push(Turtle, [TopTurtle|Rest], CheckedStack) :-
+  turtle_can_climb(Turtle, TopTurtle),
+  turtle_can_push(Turtle, TopTurtle, CheckedStack),
   !,
   append(CheckedStack, [TopTurtle], NewCheckedStack).
-stack_climb_push(Turtle, [_|Rest], _) :-
-  stack_climb_push(Turtle, Rest).
+stack_can_climb_push(Turtle, [_|Rest], _) :-
+  stack_can_climb_push(Turtle, Rest).
 
 
-can_move(Board, RowNum, ColNum, Turtle) :-
+can_move(Board, RowNum, ColNum, (Color-Number)) :-
   cell_at(Board, RowNum, ColNum, TurtleStack),
-  split_stack(TurtleStack, Turtle, AboveTurtle, _),
+  split_stack(TurtleStack, (Color-Number), AboveTurtle, _),
   combined_weight(AboveTurtle, Weight),
-  Weight < Turtle.
+  Number > Weight.
