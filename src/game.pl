@@ -1,11 +1,14 @@
 :- consult(io).
 :- consult(display).
+:- consult(aux).
 
 :- use_module(library(random)).
 
 
 config(Width, Length, Player1Level, Player2Level).
 game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
+% Turtles = 1, 2, 3, 4, 5
+%% The number represents the strength, size and weight of the turtle
 
 
 % START
@@ -107,17 +110,6 @@ initial_state(config(Width, Length, Player1Name-Player1Level, Player2Name-Player
   init_board(Width, Length, Board),
   format('Game started with ~w vs. ~w!~n', [Player1, Player2]).
 
-% init_board(+Width, +Length, -Board)
-init_board(Width, Length, Board) :-
-  length(Board, Length),
-  maplist(init_row(Width), Board).
-% init_row(+Width, -Row)
-init_row(Width, Row) :-
-  length(Row, Width),
-  maplist(init_cell, Row).
-% init_cell(-Cell)
-init_cell([]).
-
 
 % game_loop(+GameState)
 game_loop(game_state(_, _-_, _, Scored1-Scored2, Player1Name-_, Player2Name-_)) :-
@@ -162,40 +154,160 @@ choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-_,
   nth1(Input, ListOfMoves, Turtle-Direction).
 
 % Choose easy computer player's move
-%% TODO
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-_, Player2Name-_), easy, Turtle-Direction) :-
   display_turn(Turn, Player1Name, Player2Name),
   valid_moves(game_state(_, Nest1-Nest2, Board, Scored1-Scored2, _-_, Player2Name-_), ListOfMoves),
   random_member(Turtle-Direction, ListOfMoves).
 
 % Choose hard computer player's move
-%% TODO
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-_, Player2Name-_), hard, Turtle-Direction) :-
   display_turn(Turn, Player1Name, Player2Name),
   valid_moves(game_state(_, Nest1-Nest2, Board, Scored1-Scored2, _-_, _-_), ListOfMoves),
   value(game_state(_, Nest1-Nest2, Board, Scored1-Scored2, _-_, _-_), Player2Name, Value),
   nth1(Turn, [Player1Name, Player2Name], CurrPlayerName),
+  %% TODO: Implement minimax
   minimax(game_state(_, Nest1-Nest2, Board, Scored1-Scored2, _-_, _-_), CurrPlayerName, Type, Value, Turtle-Direction).
 
-%% Move's direction
-direction(1, up).
-direction(2, down).
-direction(3, left).
-direction(4, right).
-
-% get_playable_turtles(+ListOfMoves, -Turtles)
-get_playable_turtles([], []).
-get_playable_turtles([Turtle-Direction|T], [Turtle|Turtles]) :-
-  get_playable_turtles(T, Turtles).
 
 
-% move(+GameState, +Move, -NewGameState)
-%% TODO
-move(+GameState, +Turtle-Direction, -NewGameState).
+%% move_direction(+MoveType, +BoardWidth, +MoveId, -DirectionAtom)
+%%% Wrapper that translates the move id to a displayable/handlable atom
+move_direction(normal, _, DirNum, Direction) :-
+  normal_direction(DirNum, Direction).
+move_direction(hatch, Width, ColNum, Direction) :-
+  hatching_direction(Width, ColNum, Direction).
+
+%% direction(+DirectionNumber, -Direction)
+%%% 1 - up, 2 - down, 3 - left, 4 - right
+normal_direction(1, up).
+normal_direction(2, down).
+normal_direction(3, left).
+normal_direction(4, right).
+%% hatching_direction(+Width, +ColumnNumber, -Direction)
+%%% Direction pair hatch-n -> n-th Column (starting on 1) in the closest row to the nest
+hatching_direction(Width, ColNum, hatch-ColNum) :-
+  ColNum > 0,
+  ColNum =< Width.
+
+%% dir_displacement(+Direction, -RowDisplacement, -ColDisplacement)
+%%% Translation of the direction atom to the row and column displacement
+dir_displacement(up, -1, 0).
+dir_displacement(down, 1, 0).
+dir_displacement(left, 0, -1).
+dir_displacement(right, 0, 1).
+
+%% target_coords(+RowNum, +ColNum, +Direction, -DestRowNum, -DestColNum)
+%%% Calculate the destination coordinates based on the direction
+target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum) :-
+  dir_displacement(Direction, RowDisplacement, ColDisplacement),
+  DestRowNum is RowNum + RowDisplacement,
+  DestColNum is ColNum + ColDisplacement.
+
 
 % valid_moves(+GameState, -ListOfMoves)
 valid_moves(GameState, ListOfMoves) :-
   findall(Turtle-Direction, valid_move(GameState, Turtle-Direction), ListOfMoves).
+
+% valid_move(+GameState, -Move)
+%% Valid hatching moves
+valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-_, Player2Name-_), Turtle-Direction) :-
+  nth1(Turn, [Nest1, Nest2], CurrNest),
+  member(Turtle, CurrNest),
+  board_sizes(Board, Width, _),
+  move_direction(hatch, Width, Turtle, Direction),
+  valid_hatch(Turn, Board, Turtle-Direction).
+
+%% Valid normal moves
+valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-_, Player2Name-_), Turtle-Direction) :-
+  nth1(Turn, [Nest1, Nest2], CurrNest),
+  nth1(Turn, [Scored1, Scored2], CurrScored),
+  \+member(Turtle, CurrNest),
+  \+member(Turtle, CurrScored),
+  board_sizes(Board, Width, _),
+  move_direction(normal, Width, Turtle, Direction),
+  valid_normal(Turn, Board, Turtle-Direction).
+
+
+
+% valid_hatch(+Turn, +Board, +Move)
+%% Check if the hatching square is empty
+valid_hatch(Turn, Board, Turtle-hatch-ColNum) :-
+  board_sizes(Board, _, Length),
+  nth1(Turn, [1, Length], RowNum), % Hatching row is the row closest to the player/his nest
+  cell_empty(Board, RowNum, ColNum),
+  !.
+
+%% Check if the hatching square has turtle(s) and is climbable
+%% - Turtle is lighter than top of the stack and IS ABLE to climb on top of it
+valid_hatch(Turn, Board, Turtle-hatch-ColNum) :-
+  board_sizes(Board, _, Length),
+  nth1(Turn, [1, Length], RowNum),
+  cell_can_climb(Board, RowNum, ColNum, Turtle),
+  !.
+
+%% Check if the hatching square has turtle(s) and is pushable
+%% - Turtle is stronger than the stack and IS ABLE to push it
+valid_hatch(Turn, Board, Turtle-hatch-ColNum) :-
+  board_sizes(Board, _, Length),
+  nth1(Turn, [1, Length], RowNum),
+  cell_can_push(Board, RowNum, ColNum, Turtle),
+  !.
+
+%% Check if the hatching square has turtle(s) and is climbable and pushable
+%% - Turtle to hatch is lighter than some turtle in the stack and IS ABLE to climb on top of it, pushing what's above off the stack
+valid_hatch(Turn, Board, Turtle-hatch-ColNum) :-
+  board_sizes(Board, _, Length),
+  nth1(Turn, [1, Length], RowNum),
+  cell_can_climb_push(Board, RowNum, ColNum, Turtle),
+  !.
+
+
+%% valid_normal(+Turn, +Board, +Move)
+%% Check if the normal square is empty
+valid_normal(Turn, Board, Turtle-Direction) :-
+  find_turtle(Board, Turtle, RowNum, ColNum),
+  can_move(Board, RowNum, ColNum, Turtle),
+  target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum),
+  cell_empty(Board, DestRowNum, DestColNum),
+  !.
+
+%% Check if the normal square has turtle(s) and is climbable
+%% - Turtle can move, is lighter than top of the stack and IS ABLE to climb on top of it
+valid_normal(Turn, Board, Turtle-Direction) :-
+  find_turtle(Board, Turtle, RowNum, ColNum),
+  can_move(Board, RowNum, ColNum, Turtle),
+  target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum),
+  cell_can_climb(Board, DestRowNum, DestColNum, Turtle),
+  !.
+
+
+%% Check if the normal square has turtle(s) and is pushable
+%% - Turtle can move, is stronger than the stack and IS ABLE to push it
+valid_normal(Turn, Board, Turtle-Direction) :-
+  find_turtle(Board, Turtle, RowNum, ColNum),
+  can_move(Board, RowNum, ColNum, Turtle),
+  target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum),
+  cell_can_push(Board, DestRowNum, DestColNum, Turtle),
+  !.
+
+%% Check if the normal square has turtle(s) and is climbable and pushable
+%% - Turtle can move, is lighter than some turtle in the stack and IS ABLE to climb on top of it, pushing what's above off the stack
+valid_normal(Turn, Board, Turtle-Direction) :-
+  find_turtle(Board, Turtle, RowNum, ColNum),
+  can_move(Board, RowNum, ColNum, Turtle),
+  target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum),
+  cell_can_climb_push(Board, DestRowNum, DestColNum, Turtle),
+  !.
+
+
+% move(+GameState, +Move, -NewGameState)
+%% TODO
+move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction, NewGameState) :-
+
+
+  Turn1 is Turn rem 2 + 1, % Change turn
+
+
 
 % value(+GameState, +Player, -Value)
 %% TODO
