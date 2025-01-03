@@ -11,9 +11,9 @@ push(Elem, Stack, [Elem|Stack]).
 %% Get the top element of the stack and remove it
 pop([Top|Rest], Top, Rest).
 
-% peek(+Stack, -TopElement)
+% top(+Stack, -TopElement)
 %% Get the top element of the stack without removing it
-peek([Top|_], Top).
+top([Top|_], Top).
 
 % split_stack(+Stack, +Element, -AboveElement, -BelowElement)
 %% Split the stack at the specified element
