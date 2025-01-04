@@ -159,7 +159,8 @@ game_over(game_state(_, _-_, _, Scored1-Scored2, _-_, Player2Name-_), Player2Nam
 %% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), human, Turtle-Direction) :-
   valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
-  display_moves(ListOfMoves),
+  board_sizes(Board, _, Length),
+  display_moves(ListOfMoves,Length),
   length(ListOfMoves, NumOfMoves),
   get_menu_choice_ln('Option', 1, NumOfMoves, Input),
   nth1(Input, ListOfMoves, Turtle-Direction),
@@ -464,4 +465,4 @@ add_to_lists(List1-List2, [(black-Number)|Rest], NewList1-NewList2) :-
 
 % value(+GameState, +Player, -Value)
 %% TODO
-value(GameState, Player, Value).
+% value(GameState, Player, Value).

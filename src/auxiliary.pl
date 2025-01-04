@@ -100,6 +100,12 @@ set_cell(Board, RowIdx, ColIdx, Content, NewBoard) :-
 cell_empty(Board, RowIdx, ColIdx) :-
   cell_at(Board, RowIdx, ColIdx, []). % Empty stack is represented by an empty list
 
+% max_cell_size(+Board, -MaxSize)
+% Get the maximum size of all the cells on the board
+max_cell_size(Board, MaxSize) :-
+  findall(Size, (member(Row, Board), member(Cell, Row), length(Cell, Size)), Sizes),
+  max_member(MaxSize, Sizes).
+
 
 % valid_coords(+Board, +RowIndex, +ColumnIndex, +TurtleColor)
 %% Check if the coordinates are valid for hatching and normal moves
