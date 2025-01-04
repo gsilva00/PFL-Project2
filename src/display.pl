@@ -67,18 +67,21 @@ display_game(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-P
   display_nests(Player1Name, Player2Name, Nest1, Nest2),
   display_turn(Turn, Player1Name-Player1Level, Player2Name-Player2Level).
 
-add_1_ifnecessary(0,1):-!.
+% add_1_ifnecessary(+Size, -Max)
+add_1_ifnecessary(0,1):- !.
 add_1_ifnecessary(Size,Size).
 
 % display_board(+Board)
-% TODO
+%% Display the board
 display_board(Board):-
   length(Board, Rows),
   max_cell_size(Board,MaxSize),
   add_1_ifnecessary(MaxSize,Max),
   display_wall_initially(Board,Max),
-  display_rows(Board, Rows, Max).
+  display_rows(Board, Rows, Max),
+  nl.
 
+% display_rows(+Board, +Rows, +MaxSize)
 display_rows([], _, _).
 display_rows([Row|Rest], Rows, MaxSize) :-
   display_row_initially(Row,Rows, MaxSize),
@@ -87,14 +90,17 @@ display_rows([Row|Rest], Rows, MaxSize) :-
   NewRows is Rows - 1,
   display_rows(Rest, NewRows, MaxSize).
 
+% display_row_initially(+Row, +Rows, +MaxSize)
 display_row_initially([],_,_):-!.
 display_row_initially(Row,Rows,MaxSize):-
   format(' ~w',[Rows]),
   display_row(Row,Rows,MaxSize).
 
-display_row([],_,_) :- 
+% display_row(+Row, +Rows, +MaxSize)
+display_row([],_,_) :-
   write(' | '),
-  nl, !.
+  nl,
+  !.
 
 display_row([Cell|Rest],Rows,MaxSize) :-
   write(' | '),
@@ -106,6 +112,7 @@ display_row([Cell|Rest],Rows,MaxSize) :-
   display_wall_aux(space,NewMaxSize2),
   display_row(Rest,Rows,MaxSize).
 
+% display_wall_initially(+Board, +MaxSize)
 display_wall_initially([],_):-!.
 display_wall_initially([Row|_],MaxSize):-
   write('   '),
@@ -114,6 +121,7 @@ display_wall_initially([Row|_],MaxSize):-
   write('   '),
   display_wall(Row,MaxSize).
 
+% display_wall_number(+RowLen, +Acc, +MaxSize)
 display_wall_number(RowLen, Acc, _) :-
   Acc > RowLen, nl, !.
 display_wall_number(RowLen,Acc, MaxSize) :-
@@ -121,17 +129,17 @@ display_wall_number(RowLen,Acc, MaxSize) :-
   display_wall_aux(space,NewMaxSize),
   format(' ~w ',[Acc]),
   display_wall_aux(space,NewMaxSize),
-  Acc1 is Acc + 1, 
+  Acc1 is Acc + 1,
   display_wall_number(RowLen,Acc1, MaxSize).
 
-display_wall([],_) :- 
+% display_wall(+Row, +MaxSize)
+display_wall([],_) :-
   write('+'),
   nl, !.
 display_wall([_|Rest],MaxSize) :-
   write('+-'),
   display_wall_aux(hifen,MaxSize),
   display_wall(Rest,MaxSize).
-
 
 display_wall_aux(_,0).
 display_wall_aux(hifen,MaxSize):-
@@ -145,6 +153,7 @@ display_wall_aux(space,MaxSize):-
   write(' '),
   display_wall_aux(space,NewMaxSize).
 
+% display_cell(+Cell)
 display_cell(Cell) :-
   var(Cell), !,
   write('    ').
@@ -158,49 +167,53 @@ display_cell([Turtle1 | Rest]) :-
   write('/'),
   display_cell(Rest).
 
-get_extra_space(title,1,1). %2
-get_extra_space(title,2,3). %bem
-get_extra_space(title,3,4). %5
-get_extra_space(title,4,6). %bem
-get_extra_space(title,5,7). %bem
+get_extra_space(title, 1, 1).
+get_extra_space(title, 2, 3).
+get_extra_space(title, 3, 4).
+get_extra_space(title, 4, 6).
+get_extra_space(title, 5, 7).
 
-get_extra_space(cell,X,X,0):-!.
-get_extra_space(cell,Y,X,1):- X =:= Y+1,!.
-get_extra_space(cell,Y,X,3):- X =:= Y+2,!.
-get_extra_space(cell,Y,X,4):- X =:= Y+3,!.
-get_extra_space(cell,0,4,5):-!.
-get_extra_space(cell,1,5,6):-!.
-get_extra_space(cell,0,5,6):-!.
+get_extra_space(cell, X, X, 0).
+get_extra_space(cell, Y, X, 1) :-
+  X is Y + 1.
+get_extra_space(cell, Y, X, 3) :-
+  X is Y + 2.
+get_extra_space(cell, Y, X, 4) :-
+  X is Y + 3.
+get_extra_space(cell, 0, 4, 5).
+get_extra_space(cell, 1, 5, 6).
+get_extra_space(cell, 0, 5, 6).
 
-
-get_extra_space(cell2,X,X,0):-!.
-get_extra_space(cell2,0,1,1):-!.
-get_extra_space(cell2,Y,X,2):- X =:= Y+1,!.
-
-get_extra_space(cell2,0,2,2):-!.
-get_extra_space(cell2,Y,X,3):- X =:= Y+2,!.
-
-get_extra_space(cell2,0,3,4):-!.
-get_extra_space(cell2,Y,X,5):- X =:= Y+3,!.
-
-get_extra_space(cell2,Y,X,6):- X =:= Y+4,!.
-
-get_extra_space(cell2,0,5,8).
+get_extra_space(cell2, X, X, 0).
+get_extra_space(cell2, 0, 1, 1).
+get_extra_space(cell2, Y, X, 2) :-
+  X is Y + 1.
+get_extra_space(cell2, 0, 2, 2).
+get_extra_space(cell2, Y, X, 3) :-
+  X is Y + 2.
+get_extra_space(cell2, 0, 3, 4).
+get_extra_space(cell2, Y, X, 5) :-
+  X is Y + 3.
+get_extra_space(cell2, Y, X, 6) :-
+  X is Y + 4.
+get_extra_space(cell2, 0, 5, 8).
 
 % display_score(+Player1Name, +Player2Name, +Scored1, +Scored2)
 %% Display the score of each player
 display_score(Player1Name, Player2Name, Scored1, Scored2) :-
   length(Scored1, NumTurtles1),
   length(Scored2, NumTurtles2),
-  format('Score:~n - ~w: ~d turtles scored~n - ~w: ~d turtles scored~n', [Player1Name, NumTurtles1, Player2Name, NumTurtles2]).
+  format('Score:~n - ~w: ~d turtles scored~n - ~w: ~d turtles scored~n~n', [Player1Name, NumTurtles1, Player2Name, NumTurtles2]).
 
 % display_nests(+Player1Name, +Player2Name, +Nest1, +Nest2)
 %% Display the turtles in each player's nest
 display_nests(Player1Name, Player2Name, Nest1, Nest2) :-
   format('Player ~w\'s nest has turtles:~n', [Player1Name]),
-  display_list(Nest1),
+  display_list(false, Nest1),
+  nl,
   format('Player ~w\'s nest has turtles:~n', [Player2Name]),
-  display_list(Nest2).
+  display_list(false, Nest2),
+  nl,nl.
 
 % display_moves(+ListOfMoves)
 % Display a list of possible moves
@@ -231,13 +244,14 @@ get_hatch_row(white, _,1).
 get_hatch_row(black, Length, Length).
 
 
-% display_list(+List)
+% display_list(+HasAtLeastOneElement, +List)
 % Display a list of elements separated by a space (except for the last element)
-display_list([]) :-
+display_list(true, []).
+display_list(false, []) :-
   write_ln('None').
-display_list([H|T]) :-
+display_list(_, [H|T]) :-
   translate_turtle(H, Code),
-  format('Turtle ~w~n', [Code]),
+  format(' - Turtle ~w~n', [Code]),
   display_list(true, T).
 
 % display_turn(+Turn, +Player1Name, +Player2Name)
@@ -256,7 +270,7 @@ display_turn(2, _, Player2Name-Player2Level) :-
 %% Display the turtles that can be moved
 display_turtle_to_move(Turtles) :-
   write_ln('Choose the turtle to move:'),
-  display_list(Turtles).
+  display_list(false, Turtles).
 
 % translate_turtle(+Turtle, -Code)
 %% Translates the turtle's color and number to a displayable atom
