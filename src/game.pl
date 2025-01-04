@@ -1,6 +1,6 @@
 :- consult(io).
 :- consult(display).
-:- consult(aux).
+:- consult(auxiliary).
 
 :- use_module(library(random)).
 
@@ -117,9 +117,9 @@ choose_board_size(Width, Length) :-
 % GAME LOGIC
 
 % initial_state(+GameConfig, -GameState)
-initial_state(config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, Choice), game_state(Choice, [[white-1],[white-2],[white-3],[white-4],[white-5]]-[[black-1],[black-2],[black-3],[black-4],[black-5]], Board, []-[], Player1Name-Player1Level, Player2Name-Player2Level)) :-
+initial_state(config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, Choice), game_state(Choice, [white-1,white-2,white-3,white-4,white-5]-[black-1,black-2,black-3,black-4,black-5], Board, []-[], Player1Name-Player1Level, Player2Name-Player2Level)):-
   init_board(Width, Length, Board),
-  format('Game started with ~w vs. ~w!~n', [Player1, Player2]).
+  format('Game started with ~w vs. ~w!~n', [Player1Name, Player2Name]).
 
 
 % translate_turtle(+Turtle, -Code)
@@ -136,8 +136,7 @@ translate_turtle(Color-Number, Code) :-
 
 % game_loop(+GameState)
 game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
-  game_over(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), WinnerName),
-  !,
+  game_over(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), WinnerName), !,
   display_winner(WinnerName).
 game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
   display_game(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)),
@@ -149,44 +148,34 @@ game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Play
 
 
 % game_over(+GameState, -WinnerName)
-game_over(game_state(_, _-_, _, Scored1-Scored2, Player1Name-_, _-_), Player1Name) :-
-  length(Scored1, 3).
-game_over(game_state(_, _-_, _, Scored1-Scored2, _-_, Player2Name-_), Player2Name) :-
-  length(Scored2, 3).
-
-% display_winner(+WinnerName)
-display_winner(WinnerName) :-
-  format('Congratulations, ~w! You won!~n', [WinnerName]).
-
-% display_game(+GameState)
-display_game(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
-  display_board(Board),
-  display_score(Scored1, Scored2),
-  display_nests(Nest1, Nest2),
-  display_turn(Turn, Player1Name-Player1Level, Player2Name-Player2Level).
-
+game_over(game_state(_, _-_, _, Scored1-Scored2, Player1Name-_, Player2Name-_), WinnerName) :-  
+  length(Scored1, Len),
+  length(Scored2, Len2),!,
+  ((Len = 3 , WinnerName is Player1Name);
+  (Len2 = 3, WinnerName is Player2Name)).
 
 % choose_move(+GameState, +Level, -Move)
 %% Choose human player's move
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), human, Turtle-Direction) :-
   valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
-  display_moves(ListOfMoves),
+  board_sizes(Board, _, Length),
+  display_moves(ListOfMoves,Length),
   length(ListOfMoves, NumOfMoves),
   get_menu_choice_ln('Option', 1, NumOfMoves, Input),
-  nth1(Input, ListOfMoves, Turtle-Direction).
+  nth1(Input, ListOfMoves, Turtle-Direction), !.
 
 % Choose easy computer player's move
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), easy, Turtle-Direction) :-
   valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
-  random_member(Turtle-Direction, ListOfMoves).
+  random_member(Turtle-Direction, ListOfMoves), !.
 
 % Choose hard computer player's move
-choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), hard, Turtle-Direction) :-
-  valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
-  value(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player2Name, Number),
-  nth1(Turn, [Player1Name, Player2Name], CurrPlayerName),
-  %% TODO: Implement minimax
-  minimax(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), CurrPlayerName, Type, Number, Turtle-Direction).
+% choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), hard, Turtle-Direction) :-
+%  valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
+%  value(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player2Name, Number),
+%  nth1(Turn, [Player1Name, Player2Name], CurrPlayerName),
+%  %% TODO: Implement minimax
+%  minimax(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), CurrPlayerName, Type, Number, Turtle-Direction).
 
 
 
@@ -321,17 +310,17 @@ valid_normal(Board, Turtle-Direction) :-
 
 % move(+GameState, +Move, -NewGameState)
 %% TODO
-move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction, NewGameState) :-
+move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction, NewGameState).
 
 
-  Turn1 is Turn rem 2 + 1, % Change turn
+  %Turn1 is Turn rem 2 + 1 % Change turn
 
 
 
 % value(+GameState, +Player, -Value)
 %% TODO
-value(GameState, Player, Value).
+% value(GameState, Player, Value).
 
 % minimax(+GameState, +Player, +Type, +Value, -Move)
 %% TODO
-minimax(GameState, Player, Type, Value, Turtle-Direction).
+% minimax(GameState, Player, Type, Value, Turtle-Direction).

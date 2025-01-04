@@ -75,6 +75,12 @@ cell_at(Board, RowNum, ColNum, Stack) :-
 cell_empty(Board, RowNum, ColNum) :-
   cell_at(Board, RowNum, ColNum, []). % Empty cell is represented by an empty list
 
+% max_cell_size(+Board, -MaxSize)
+% Get the maximum size of all the cells on the board
+max_cell_size(Board, MaxSize) :-
+  findall(Size, (member(Row, Board), member(Cell, Row), length(Cell, Size)), Sizes),
+  max_member(MaxSize, Sizes).
+
 
 %% Game Logic
 

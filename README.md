@@ -30,9 +30,29 @@ load_files('~/Desktop/projectPFL2/src/game.pl').
 
 > include all the necessary steps for the correct execution of the game in both Linux and Windows environments (in addition to the installation of SICStus Prolog 4.9).
 
+After loading the correct files, use SICSTus to consult the `game.pl` file. Then, proceed to write `play.` in the console and press `Enter`. The game will be displayed shortly after.
+
 ## Description of the game
 
 > a brief description of the game and its rules; you should also include the links used to gather information (official game website, rule book, etc.)
+
+`turtles, a game of turtles colliding in three dimensions` is a competitive two-player game, where the players have to face eachother to win the game.
+
+**Goal:** Get all of your turtles in the oponent's nest.
+
+### How to start the game:
+The menu of the game will include all the gameplay options available at the moment:  Human vs. Human (H/H), Human vs. Computer (H/PC), Computer vs. Human (PC/H), Computer vs. Computer (PC/PC). Choose a number between 1-4 to play the respective gamemode, otherwise write 5 to exit the game.
+
+If you choose to have humam players, the game will
+
+**Setup:** Each player has 5 turtles that they can move on the 4 x 2 board. Firstly, each player will have all of their turtles placed inside their nest (outside the board).
+
+Each 
+
+
+
+
+**How to win:** 
 
 ## Considerations for game extensions
 
