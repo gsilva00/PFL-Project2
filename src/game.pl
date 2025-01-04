@@ -1,20 +1,16 @@
 :- consult(io).
 :- consult(display).
-:- consult(aux).
+:- consult(auxiliary).
 
 :- use_module(library(random)).
 
 
-config(Width, Length, Player1Level, Player2Level).
-game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
 % Turtles
 %% Represented as pair Color-Number
 %% Color: Black and White
 %% Number: 1, 2, 3, 4, 5
 %% - Represents the strength, size and weight of the turtle (SSW)
 
-
-% START
 
 % play/0
 %% Starts the game (main predicate)
@@ -23,24 +19,26 @@ play :-
   choose_gamemode(Gamemode),
   choose_difficulty(Gamemode, Player1Level, Player2Level),
   choose_players_names(Gamemode, Player1Name, Player2Name),
-  choose_first_player(Gamemode, Player1Name, Player2Name, Choice),
+  choose_first_player(Gamemode, Player1Name, Player2Name, FirstPlayerChoice),
   choose_board_size(Width, Length),
-  initial_state(config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, Choice), game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)),
-  game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)).
+  initial_state(game_config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, FirstPlayerChoice), GameState),
+  game_loop(GameState).
 
 
 
 % CONFIGURING THE GAME
 
-% Gamemode
 %% choose_gamemode(-Gamemode)
+%% Prompts the user to choose a gamemode
 choose_gamemode(Gamemode) :-
   display_gamemode_menu,
   get_menu_choice_ln('Option', 1, 5, Choice),
   gamemode(Choice, Gamemode),
   handle_gamemode(Gamemode).
 
-%% handle_gamemode(+Choice, -Gamemode)
+%% gamemode(+Choice, -Gamemode)
+%% Auxiliary predicate to choose_gamemode/1
+%% Translates the inputted choice to the respective gamemode
 gamemode(1, hh).
 gamemode(2, hc).
 gamemode(3, ch).
@@ -48,12 +46,14 @@ gamemode(4, cc).
 gamemode(5, exit).
 
 %% handle_gamemode(+Gamemode)
+%% Auxiliary predicate to choose_gamemode/1
+%% Handles the exit option
 handle_gamemode(exit) :- halt.
 handle_gamemode(_).
 
 
-% Player Names
 %% choose_players_names(+Gamemode, -Player1Name, -Player2Name)
+%% Prompts the user to choose the players' names (if not a computer)
 choose_players_names(hh, Player1Name, Player2Name) :-
   get_string_ln('Choose Player 1\'s name (white turtles)', Player1Name),
   get_string_ln('Choose Player 2\'s name (black turtles)', Player2Name).
@@ -63,8 +63,9 @@ choose_players_names(ch, 'Computer', Player2Name) :-
   get_string_ln('Choose Player\'s name (black turtles)', Player2Name).
 choose_players_names(cc, 'Computer 1', 'Computer 2').
 
-% First Player
+
 %% choose_first_player(+Gamemode, +Player1Name, +Player2Name, -Choice)
+%% Prompts the user to choose the player that plays first
 choose_first_player(hh, Player1Name, Player2Name, Choice) :-
   display_first_player_menu(Player1Name, Player2Name),
   get_menu_choice_ln('Option', 1, 2, Choice).
@@ -73,8 +74,8 @@ choose_first_player(ch, 'Computer', Player2Name, Player2Name).
 choose_first_player(cc, 'Computer 1', 'Computer 2', 'Computer 1').
 
 
-% Difficulty
 %% choose_difficulty(+Gamemode, -Player1Level, -Player2Level)
+%% Prompts the user to choose the difficulty level for the computer player(s)
 choose_difficulty(hh, Player1Level, Player2Level) :-
   difficulty_level(0, Player1Level),
   difficulty_level(0, Player2Level).
@@ -96,16 +97,16 @@ choose_difficulty(cc, Player1Level, Player2Level) :-
   get_menu_choice_ln('Option', 1, 2, DifficultyChoice2),
   difficulty_level(DifficultyChoice2, Player2Level).
 
-%% Difficulty Levels
-%%% difficulty_level(+Level, -LevelName)
-%%% - 0: Human, 1: Easy, 2: Hard
+%% difficulty_level(+Level, -LevelName)
+%% Auxiliary predicate to choose_difficulty/2
+%% Translates the inputted level to the respective level name (atom)
 difficulty_level(0, human).
 difficulty_level(1, easy).
 difficulty_level(2, hard).
 
 
-% Board Size
 %% choose_board_size(-Width, -Length)
+%% Prompts the user to choose the board size
 choose_board_size(Width, Length) :-
   display_board_width_menu,
   get_menu_choice_ln('Option', 2, 6, Width),
@@ -117,26 +118,19 @@ choose_board_size(Width, Length) :-
 % GAME LOGIC
 
 % initial_state(+GameConfig, -GameState)
-initial_state(config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, Choice), game_state(Choice, [[white-1],[white-2],[white-3],[white-4],[white-5]]-[[black-1],[black-2],[black-3],[black-4],[black-5]], Board, []-[], Player1Name-Player1Level, Player2Name-Player2Level)) :-
-  init_board(Width, Length, Board),
-  format('Game started with ~w vs. ~w!~n', [Player1, Player2]).
-
-
-% translate_turtle(+Turtle, -Code)
-%% Translates the turtle's color and number to a displayable atom
-translate_turtle(Color-Number, Code) :-
-  sub_atom(Color, 0, 1, _, FirstLower),
-  char_code(FirstLower, CodeLower),
-  CodeUpper is CodeLower - 32,
-  char_code(FirstUpper, CodeUpper),
-  number_chars(Number, NumChars),
-  atom_chars(NumAtom, NumChars),
-  atom_concat(FirstUpper, NumAtom, Code).
+%% Initializes the game state based on the game configuration
+%% GameConfig is represented by the compound term - game_config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, FirstPlayerChoice).
+%% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
+initial_state(game_config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, Choice), game_state(Choice, [white-1,white-2,white-3,white-4,white-5]-[black-1,black-2,black-3,black-4,black-5], Board, []-[], Player1Name-Player1Level, Player2Name-Player2Level)) :-
+  init_board(Width, Length, [], Board),
+  format('Game started with ~w vs. ~w!~n', [Player1Name, Player2Name]).
 
 
 % game_loop(+GameState)
-game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
-  game_over(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), WinnerName),
+%% Main game loop
+%% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
+game_loop(GameState) :-
+  game_over(GameState, WinnerName),
   !,
   display_winner(WinnerName).
 game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
@@ -148,190 +142,326 @@ game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Play
   game_loop(NewGameState).
 
 
-% game_over(+GameState, -WinnerName)
+% game_over(+GameState, -Winner)
+%% Check if the game is over
+%% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
 game_over(game_state(_, _-_, _, Scored1-Scored2, Player1Name-_, _-_), Player1Name) :-
-  length(Scored1, 3).
+  length(Scored1, Length),
+  Length >= 3,
+  !.
 game_over(game_state(_, _-_, _, Scored1-Scored2, _-_, Player2Name-_), Player2Name) :-
-  length(Scored2, 3).
-
-% display_winner(+WinnerName)
-display_winner(WinnerName) :-
-  format('Congratulations, ~w! You won!~n', [WinnerName]).
-
-% display_game(+GameState)
-display_game(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
-  display_board(Board),
-  display_score(Scored1, Scored2),
-  display_nests(Nest1, Nest2),
-  display_turn(Turn, Player1Name-Player1Level, Player2Name-Player2Level).
-
+  length(Scored2, Length),
+  Length >= 3,
+  !.
 
 % choose_move(+GameState, +Level, -Move)
 %% Choose human player's move
+%% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), human, Turtle-Direction) :-
   valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
   display_moves(ListOfMoves),
   length(ListOfMoves, NumOfMoves),
   get_menu_choice_ln('Option', 1, NumOfMoves, Input),
-  nth1(Input, ListOfMoves, Turtle-Direction).
-
-% Choose easy computer player's move
-choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), easy, Turtle-Direction) :-
-  valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
-  random_member(Turtle-Direction, ListOfMoves).
-
-% Choose hard computer player's move
+  nth1(Input, ListOfMoves, Turtle-Direction),
+  !.
+%% Choose easy-computer player's move
+choose_move(GameState, easy, Turtle-Direction) :-
+  valid_moves(GameState, ListOfMoves),
+  random_member(Turtle-Direction, ListOfMoves),
+  !.
+%% Choose hard-computer player's move
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), hard, Turtle-Direction) :-
   valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
   value(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player2Name, Number),
   nth1(Turn, [Player1Name, Player2Name], CurrPlayerName),
-  %% TODO: Implement minimax
-  minimax(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), CurrPlayerName, Type, Number, Turtle-Direction).
-
-
-
-%% move_direction(+MoveType, +BoardWidth, +MoveId, -DirectionAtom)
-%%% Wrapper that translates the move id to a displayable/handlable atom
-move_direction(normal, _, DirId, Direction) :-
-  normal_direction(DirId, Direction).
-move_direction(hatch, Width, ColNum, Direction) :-
-  hatching_direction(Width, ColNum, Direction).
-
-%% direction(+DirectionNumber, -Direction)
-%%% 1 - up, 2 - down, 3 - left, 4 - right
-normal_direction(1, up).
-normal_direction(2, down).
-normal_direction(3, left).
-normal_direction(4, right).
-%% hatching_direction(+Width, +ColumnNumber, -Direction)
-%%% Direction pair hatch-n -> n-th Column (starting on 1) in the closest row to the nest
-hatching_direction(Width, ColNum, (hatch-ColNum)) :-
-  ColNum > 0,
-  ColNum =< Width.
-
-%% dir_displacement(+Direction, -RowDisplacement, -ColDisplacement)
-%%% Translation of the direction atom to the row and column displacement
-dir_displacement(up, -1, 0).
-dir_displacement(down, 1, 0).
-dir_displacement(left, 0, -1).
-dir_displacement(right, 0, 1).
-
-%% target_coords(+RowNumber, +ColumnNumber, +Direction, -DestinationRowNumber, -DestinationColumnNumber)
-%%% Calculate the destination coordinates based on the direction
-target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum) :-
-  dir_displacement(Direction, RowDisplacement, ColDisplacement),
-  DestRowNum is RowNum + RowDisplacement,
-  DestColNum is ColNum + ColDisplacement.
+  %% TODO: Implement HARD AI algorithm
+  !.
 
 
 % valid_moves(+GameState, -ListOfMoves)
+%% Find all valid moves for the current player
+%% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
 valid_moves(GameState, ListOfMoves) :-
   findall(Turtle-Direction, valid_move(GameState, Turtle-Direction), ListOfMoves).
 
 % valid_move(+GameState, -Move)
-%% Valid hatching moves
-valid_move(game_state(Turn, Nest1-Nest2, Board, _-_, _-_, _-_), (Color-Number)-Direction) :-
+%% Valid hatching moves (for turtles in the nests)
+%% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
+valid_move(game_state(Turn, Nest1-Nest2, Board, _-_, _-_, _-_), Turtle-Direction) :-
   nth1(Turn, [Nest1, Nest2], CurrNest),
-  member((Color-Number), CurrNest),
+  member(Turtle, CurrNest),
   board_sizes(Board, Width, _),
-  move_direction(hatch, Width, Number, Direction),
-  valid_hatch(Turn, Board, (Color-Number)-Direction).
-
-%% Valid normal moves
-valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, _-_, _-_), (Color-Number)-Direction) :-
+  move_directions(hatch, Width, Direction),
+  valid_hatch(Turn, Board, Turtle-Direction).
+%% Valid normal moves (for turtles on the board - not in the nests or scored)
+%% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
+valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, _-_, _-_), Turtle-Direction) :-
   nth1(Turn, [Nest1, Nest2], CurrNest),
   nth1(Turn, [Scored1, Scored2], CurrScored),
-  \+member((Color-Number), CurrNest),
-  \+member((Color-Number), CurrScored),
-  move_direction(normal, _, Number, Direction),
-  valid_normal(Board, (Color-Number)-Direction).
-
+  \+member(Turtle, CurrNest),
+  \+member(Turtle, CurrScored),
+  move_directions(normal, _, Direction),
+  valid_normal(Board, Turtle-Direction).
 
 
 % valid_hatch(+Turn, +Board, +Move)
-%% Check if the hatching square is empty
-valid_hatch(Turn, Board, _-(hatch-ColNum)) :-
+%% Check if the hatching cell is empty
+valid_hatch(Turn, Board, _-(hatch-ColIdx)) :-
   board_sizes(Board, _, Length),
-  nth1(Turn, [1, Length], RowNum), % Hatching row is the row closest to the player/his nest
-  cell_empty(Board, RowNum, ColNum),
+  nth1(Turn, [Length, 1], RowIdx), % Hatching row is the row closest to the player/his nest (Bottom row for white, top row for black)
+  cell_empty(Board, RowIdx, ColIdx),
   !.
-
-%% Check if the hatching square has turtle(s) and is climbable
+%% Check if the hatching cell has turtle(s) and is climbable
 %% - Turtle is lighter than top of the stack and IS ABLE to climb on top of it
-valid_hatch(Turn, Board, Turtle-(hatch-ColNum)) :-
+valid_hatch(Turn, Board, Turtle-(hatch-ColIdx)) :-
   board_sizes(Board, _, Length),
-  nth1(Turn, [1, Length], RowNum),
-  cell_can_climb(Board, RowNum, ColNum, Turtle),
+  nth1(Turn, [Length, 1], RowIdx),
+  cell_can_climb(Board, RowIdx, ColIdx, [Turtle]),
   !.
-
-%% Check if the hatching square has turtle(s) and is pushable
+%% Check if the hatching cell has turtle(s) and is pushable
 %% - Turtle is stronger than the stack and IS ABLE to push it
-valid_hatch(Turn, Board, Turtle-(hatch-ColNum)) :-
+valid_hatch(Turn, Board, Turtle-(hatch-ColIdx)) :-
   board_sizes(Board, _, Length),
-  nth1(Turn, [1, Length], RowNum),
-  cell_can_push(Board, RowNum, ColNum, Turtle),
+  nth1(Turn, [Length, 1], RowIdx),
+  cell_can_push(Board, RowIdx, ColIdx, [Turtle]),
   !.
-
-%% Check if the hatching square has turtle(s) and is climbable and pushable
+%% Check if the hatching cell has turtle(s) and is climbable and pushable
 %% - Turtle to hatch is lighter than some turtle in the stack and IS ABLE to climb on top of it, pushing what's above off the stack
-valid_hatch(Turn, Board, Turtle-(hatch-ColNum)) :-
+valid_hatch(Turn, Board, Turtle-(hatch-ColIdx)) :-
   board_sizes(Board, _, Length),
-  nth1(Turn, [1, Length], RowNum),
-  cell_can_climb_push(Board, RowNum, ColNum, Turtle),
+  nth1(Turn, [Length, 1], RowIdx),
+  cell_can_climb_push(Board, RowIdx, ColIdx, [Turtle]),
   !.
 
 
-%% valid_normal(+Board, +Move)
-%% Check if the normal square is empty
+% valid_normal(+Board, +Move)
+%% Check if it is a scoring move
+valid_normal(Board, (Color-Number)-Direction) :-
+  find_stack_to_move(Board, Color-Number, RowIdx, ColIdx, TurtleStack),
+  stack_can_move(Board, RowIdx, ColIdx, (Color-Number), TurtleStack),
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  valid_coords(Board, DestRowIdx, DestColIdx, Color),
+  cell_can_score(Board, DestRowIdx, DestColIdx, Color),
+  !.
+%% Check if the normal cell is empty
+%% - Turtle can move to the destination coords (empty cell)
+valid_normal(Board, (Color-Number)-Direction) :-
+  find_stack_to_move(Board, Color-Number, RowIdx, ColIdx, TurtleStack),
+  stack_can_move(Board, RowIdx, ColIdx, (Color-Number), TurtleStack),
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  valid_coords(Board, DestRowIdx, DestColIdx, Color),
+  cell_empty(Board, DestRowIdx, DestColIdx),
+  !.
+%% Check if the normal cell has turtle(s) and is climbable
+%% - Turtle can move to the destination coords, is lighter than the top of the stack in that cell and IS ABLE to climb on top of it
 valid_normal(Board, Turtle-Direction) :-
-  find_turtle(Board, Turtle, RowNum, ColNum),
-  can_move(Board, RowNum, ColNum, Turtle),
-  target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum),
-  cell_empty(Board, DestRowNum, DestColNum),
+  find_stack_to_move(Board, Turtle, RowIdx, ColIdx, TurtleStack),
+  stack_can_move(Board, RowIdx, ColIdx, TurtleStack),
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  valid_coords(Board, DestRowIdx, DestColIdx, Color),
+  cell_can_climb(Board, DestRowIdx, DestColIdx, TurtleStack),
   !.
-
-%% Check if the normal square has turtle(s) and is climbable
-%% - Turtle can move, is lighter than top of the stack and IS ABLE to climb on top of it
+%% Check if the normal cell has turtle(s) and is pushable
+%% - Turtle can move to the destination coords, is stronger than the stack in that cell and IS ABLE to push it
 valid_normal(Board, Turtle-Direction) :-
-  find_turtle(Board, Turtle, RowNum, ColNum),
-  can_move(Board, RowNum, ColNum, Turtle),
-  target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum),
-  cell_can_climb(Board, DestRowNum, DestColNum, Turtle),
+  find_stack_to_move(Board, Turtle, RowIdx, ColIdx, TurtleStack),
+  stack_can_move(Board, RowIdx, ColIdx, TurtleStack),
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  valid_coords(Board, DestRowIdx, DestColIdx, Color),
+  cell_can_push(Board, DestRowIdx, DestColIdx, TurtleStack),
   !.
-
-
-%% Check if the normal square has turtle(s) and is pushable
-%% - Turtle can move, is stronger than the stack and IS ABLE to push it
+%% Check if the normal cell has turtle(s) and is climbable and pushable
+%% - Turtle can move to the destination coords, is lighter than some turtle in the stack in that cell and IS ABLE to climb on top of it, pushing what's above that turtle off the stack
 valid_normal(Board, Turtle-Direction) :-
-  find_turtle(Board, Turtle, RowNum, ColNum),
-  can_move(Board, RowNum, ColNum, Turtle),
-  target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum),
-  cell_can_push(Board, DestRowNum, DestColNum, Turtle),
+  find_stack_to_move(Board, Turtle, RowIdx, ColIdx, TurtleStack),
+  stack_can_move(Board, RowIdx, ColIdx, TurtleStack),
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  valid_coords(Board, DestRowIdx, DestColIdx, Color),
+  cell_can_climb_push(Board, DestRowIdx, DestColIdx, TurtleStack),
   !.
 
-%% Check if the normal square has turtle(s) and is climbable and pushable
-%% - Turtle can move, is lighter than some turtle in the stack and IS ABLE to climb on top of it, pushing what's above off the stack
-valid_normal(Board, Turtle-Direction) :-
-  find_turtle(Board, Turtle, RowNum, ColNum),
-  can_move(Board, RowNum, ColNum, Turtle),
-  target_coords(RowNum, ColNum, Direction, DestRowNum, DestColNum),
-  cell_can_climb_push(Board, DestRowNum, DestColNum, Turtle),
-  !.
+
+%% move_directions(+MoveType, +BoardWidth, -DirectionAtom)
+%%% Wrapper to translate the move type to all possible direction atoms
+move_directions(hatch, Width, Direction) :-
+  hatching_directions(Width, Direction).
+move_directions(normal, _, Direction) :-
+  normal_directions(Direction).
+
+%% hatching_directions(+Width, -Direction)
+%%% Direction pair hatch-n -> n-th Column (starting on 1) in the closest row to the nest
+hatching_directions(Width, (hatch-ColIdx)) :-
+  between(1, Width, ColIdx).
+%% direction(+DirectionNumber, -Direction)
+%%% 1 - up, 2 - down, 3 - left, 4 - right
+normal_directions(up).
+normal_directions(down).
+normal_directions(left).
+normal_directions(right).
+
 
 
 % move(+GameState, +Move, -NewGameState)
-%% TODO
-move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction, NewGameState) :-
-
-
+%% Make a hatching move
+%% GameState and NewGameState are represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
+move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-(hatch-ColIdx), game_state(Turn1, NewNest1-NewNest2, NewBoard, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
+  valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-(hatch-ColIdx)),
+  board_sizes(Board, Width, Length),
+  nth1(Turn, [Length, 1], RowIdx),
+  move_hatch(false, Nest1-Nest2, Board, RowIdx, ColIdx, Turtle, NewBoard, NewNest1-NewNest2),
+  remove_from_nest(Turn, Nest1-Nest2, Turtle, NewNest1-NewNest2),
   Turn1 is Turn rem 2 + 1, % Change turn
+  !.
+%% Make a normal move
+move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction, game_state(Turn1, NewNest1-NewNest2, NewBoard, NewScored1-NewScored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
+  valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction),
+  find_stack_to_move(Board, Turtle, RowIdx, ColIdx, TurtleStack),
+  move_normal(false, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2),
+  Turn1 is Turn rem 2 + 1,
+  !.
+
+
+% move_hatch(+IsChainReaction, +(Nest1-Nest2), +Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard, -(NewNest1-NewNest2))
+%% Handle chain reactions from pushing turtles
+%% No more turtles to push (no more chain reactions from pushing)
+move_hatch(true, _-_, _, _, _, [], _, _-_).
+%% Move the turtle to the hatching cell (empty cell)
+%% OR Move DisplacedTurtleStack because it is able to move to the empty cell - continue chain reaction
+%% For chain reaction handling see move_hatch(true, ...) predicates
+move_hatch(_, _-_, Board, RowIdx, ColIdx, TurtleStack, NewBoard, _-_) :-
+  cell_empty(Board, RowIdx, ColIdx),
+  move_empty(Board, RowIdx, ColIdx, TurtleStack, NewBoard),
+  !.
+%% Move the turtle to the hatching cell (occupied cell - climb top of stack)
+%% OR Move DisplacedTurtleStack because it is able to climb the top of the next turtle stack - continue chain reaction
+move_hatch(_, _-_, Board, RowIdx, ColIdx, TurtleStack, NewBoard, _-_) :-
+  cell_can_climb(Board, RowIdx, ColIdx, TurtleStack),
+  move_climb(Board, RowIdx, ColIdx, TurtleStack, NewBoard),
+  !.
+%% Move the turtle to the hatching cell (occupied cell - push stack)
+%% OR Move DisplacedTurtleStack because it is able to push next turtle stack - continue chain reaction
+move_hatch(_, Nest1-Nest2, Board, RowIdx, ColIdx, TurtleStack, NewBoard, NewNest1-NewNest2) :-
+  cell_can_push(Board, RowIdx, ColIdx, TurtleStack),
+  hatch_move_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
+  !,
+  NewRowIdx is RowIdx + 1,
+  move_hatch(true, Nest1-Nest2, Board, NewRowIdx, ColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2).
+%% Move the turtle to the hatching cell (occupied cell - climb and push stack)
+%% OR Move DisplacedTurtleStack because it is able to climb and push one of the turtles in the next turtle stack - continue chain reaction
+move_hatch(_, _-_, Board, RowIdx, ColIdx, TurtleStack, NewBoard, _-_) :-
+  cell_can_climb_push(Board, RowIdx, ColIdx, TurtleStack),
+  move_climb_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
+  !,
+  NewRowIdx is RowIdx + 1,
+  move_hatch(true, Nest1-Nest2, Board, NewRowIdx, ColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2).
+%% Handle chain reactions from pushing turtles
+%% DisplacedTurtleStack is not able to climb, push, or climb and push the next turtle - return turtles to the nests and stop chain reaction
+move_hatch(true, Nest1-Nest2, Board, RowIdx, ColIdx, TurtleStack, NewBoard, NewNest1-NewNest2) :-
+  \+cell_empty(Board, RowIdx, ColIdx),
+  \+cell_can_climb(Board, RowIdx, ColIdx, TurtleStack),
+  \+cell_can_push(Board, RowIdx, ColIdx, TurtleStack),
+  \+cell_can_climb_push(Board, RowIdx, ColIdx, TurtleStack),
+  add_to_lists(Nest1-Nest2, TurtleStack, NewNest1-NewNest2),
+  !.
+
+
+% remove_from_nest(+Turn, +Nest1-Nest2, +Turtle, -NewNest1-NewNest2)
+%% Remove the Turtle from the respective nest (upon hatching move)
+remove_from_nest(1, Nest1-Nest2, Turtle, NewNest1-Nest2) :-
+  select(Turtle, Nest1, NewNest1).
+remove_from_nest(2, Nest1-Nest2, Turtle, Nest1-NewNest2) :-
+  select(Turtle, Nest2, NewNest2).
+
+
+
+% move_normal(+IsChainReaction, +Turn, +Nest1-Nest2, +Board, +Scored1-Scored2, +RowIndex, +ColumnIndex, +Direction, +TurtleStack, -NewBoard, -NewNest1-NewNest2, -NewScored1-NewScored2)
+%% Handle chain reactions from pushing turtles
+%% No more turtles to push (no more chain reactions from pushing)
+move_normal(true, _-_, _, _-_, _, _, _, [], _, _-_, _-_).
+%% Move TurtleStack off the board to the sides or to the end (with the turtle's own color) - return turtles to the nests and stop chain reaction
+%% Falling off the sides or the turtle's own end is allowed only for chain reactions from pushing turtles - the only moves that fail coordinates validation
+move_normal(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+  last(TurtleStack, (Color-_)), % Get the color of the base turtle in the stack
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  \+valid_coords(Board, DestRowIdx, DestColIdx, Color),
+  add_to_lists(Nest1-Nest2, TurtleStack, NewNest1-NewNest2),
+  !.
+%% Move TurtleStack, making a scoring move
+%% OR Move DisplacedTurtleStack because it is able to move to the scoring cell - stop chain reaction
+%% For chain reaction handling see move_normal(true, ...) predicates
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+  last(TurtleStack, (Color-_)),
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  cell_can_score(Board, DestRowIdx, DestColIdx, Color),
+  normal_move_score(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, NewScored1-NewScored2),
+  allowed_outside_board(ends, Color, TurtleStack, Scored1-Scored2, Nest1-Nest2, NewNest1-NewNest2, NewScored1-NewScored2),
+  !.
+%% Move TurtleStack to the normal cell (empty cell)
+%% OR Move DisplacedTurtleStack because it is able to move to the empty cell - continue chain reaction
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  cell_empty(Board, DestRowIdx, DestColIdx),
+  normal_move_empty(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard),
+  !.
+%% Move TurtleStack to the normal cell (occupied cell - climb top of stack)
+%% OR Move DisplacedTurtleStack because it is able to climb the top of next turtle stack - continue chain reaction
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  cell_can_climb(Board, DestRowIdx, DestColIdx, TurtleStack),
+  normal_move_climb(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard),
+  !.
+%% Move TurtleStack to the normal cell (occupied cell - push stack)
+%% OR Move DisplacedTurtleStack because it is able to push the next turtle stack - continue chain reaction
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  cell_can_push(Board, DestRowIdx, DestColIdx, TurtleStack),
+  normal_move_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
+  !,
+  NewRowIdx is RowIdx + 1,
+  move_hatch(true, Board, NewRowIdx, DestColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2).
+%% Move TurtleStack to the normal cell (occupied cell - climb and push stack)
+%% OR Move DisplacedTurtleStack because it is able to climb and push one of the turtles in the next turtle stack - continue chain reaction
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+  dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
+  cell_can_climb_push(Board, DestRowIdx, DestColIdx, TurtleStack),
+  normal_move_climb_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
+  !,
+  NewRowIdx is RowIdx + 1,
+  move_hatch(true, Board, NewRowIdx, DestColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2).
+%% Handles chain reactions from pushing turtles
+%% DisplacedTurtleStack is not able to climb, push, or climb and push the next turtle - return turtles to the nests and stop chain reaction
+move_normal(true, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+  add_to_lists(Nest1-Nest2, TurtleStack, NewNest1-NewNest2),
+  !.
+
+
+
+% allowed_outside_board(+OutsideMoveType, +EndColor, +TurtleStack, +Scored1-Scored2, +Nest1-Nest2, -NewNest1-NewNest2, -NewScored1-NewScored2)
+%% Handle when a TurtleStack is moved outside the board
+%% - OutsideMoveType: sides - turtles are moved to the sides of the board (outside the board) and returned to the respective nests
+allowed_outside_board(sides, _, Nest1-Nest2, Scored1-Scored2, [(Color-Number)|Rest], NewNest1-NewNest2, NewScored1-NewScored2) :-
+  add_to_lists(Nest1-Nest2, [(Color-Number)|Rest], NewNest1-NewNest2).
+%% - OutsideMoveType: ends - turtles are moved to the ends of the board (outside the board)
+%%   - Returned to the respective nests if they are of the same color as the end
+%%   - Scored if they are of the opposite color
+%% - EndColor: Used to determine which end of the board the turtle(s) is moved to ('white' turtles' end or 'black' turtles' end)
+allowed_outside_board(ends, EndColor, Nest1-Nest2, Scored1-Scored2, [(Color-Number)|Rest], NewNest1-NewNest2, NewScored1-NewScored2) :-
+  split_stack_by_color(TurtleStack, EndColor, SameColorStack, DifferentColorStack),
+  add_to_lists(Nest1-Nest2, SameColorStack, NewNest1-NewNest2),
+  add_to_lists(Scored1-Scored2, DifferentColorStack, NewScored1-NewScored2).
+
+% add_to_lists(+(List1-List2), +TurtleStack, -(NewList1-NewList2))
+%% Given the state's lists, adds each turtle in the stack to the respective list
+add_to_lists(List1-List2, [], List1-List2).
+add_to_lists(List1-List2, [(white-Number)|Rest], NewList1-NewList2) :-
+  append(List1, [(white-Number)], NewTempList1),
+  add_to_lists(NewTempList1-List2, Rest, NewList1-NewList2).
+add_to_lists(List1-List2, [(black-Number)|Rest], NewList1-NewList2) :-
+  append(List2, [(black-Number)], NewTempList2),
+  add_to_lists(List1-NewTempList2, Rest, NewList1-NewList2).
 
 
 
 % value(+GameState, +Player, -Value)
 %% TODO
 value(GameState, Player, Value).
-
-% minimax(+GameState, +Player, +Type, +Value, -Move)
-%% TODO
-minimax(GameState, Player, Type, Value, Turtle-Direction).

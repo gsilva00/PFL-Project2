@@ -1,6 +1,6 @@
 % TURTLE MANIPULATION
 
-%% Stack Logic
+%% 1. Stack Logic
 %%% Stack is represented as a list of elements (list operations in Prolog are efficient and exactly what we need)
 
 % push(+Element, +Stack, -NewStack)
@@ -15,47 +15,62 @@ pop([Top|Rest], Top, Rest).
 %% Get the top element of the stack without removing it
 top([Top|_], Top).
 
-% split_stack(+Stack, +Element, -AboveElement, -BelowElement)
+% split_stack(?Stack, ?Element, ?StackAbove, ?StackBelow)
 %% Split the stack at the specified element
 split_stack(Stack, Elem, Above, Below) :-
   append(Above, [Elem|Below], Stack).
 
 % push_stack(+Stack, +DestinationStack, -NewDestinationStack)
-push_stack(Stack, Dest, NewDest) :-
-  append(Stack, Dest, NewDest).
+%% Push the stack to the destination stack
+push_stack(Stack, DestStack, NewDestStack) :-
+  append(Stack, DestStack, NewDestStack).
 
 
-%% Game Logic
+%% 2. Move Logic
 
-% turtle_weight(+TurtleStack, -Weight)
-%% Use of accumulator for tail recursion increased efficiency
+% combined_weight(+TurtleStack, -Weight)
+%% Calculate the weight of the turtle stack
+%% Use of accumulator for the increased efficiency of tail recursion
 combined_weight(TurtleStack, Weight) :-
   combined_weight_aux(TurtleStack, 0, Weight).
 
+% combined_weight_aux(+TurtleStack, +Acc, -Weight)
+%% Auxiliary predicate for combined_weight/2
 combined_weight_aux([], Acc, Acc).
 combined_weight_aux([(_-Number)|Rest], Acc, Weight) :-
   NewAcc is Acc + Number,
   combined_weight_aux(Rest, NewAcc, Weight).
 
 
+% split_stack_by_color(+Stack, +Color, -SameColorStack, -OtherColorStack)
+%% Splits the stack into two stacks: one with turtles of the given Color and one with turtles of the other color
+split_stack_by_color([], _, [], []).
+split_stack_by_color([(Color-Number)|Rest], Color, [(Color-Number)|SameColorStack], OtherColorStack) :-
+  split_stack_by_color(Rest, Color, SameColorStack, OtherColorStack).
+split_stack_by_color([(OtherColor-Number)|Rest], Color, SameColorStack, [(OtherColor-Number)|OtherColorStack]) :-
+  Color \= OtherColor,
+  split_stack_by_color(Rest, Color, SameColorStack, OtherColorStack).
+
+
 
 % BOARD MANIPULATION
 
-%% Board Logic
+%% 1. Board Logic
 
-% init_board(+Width, +Length, -Board)
-%% Initialize the board with empty cells
-init_board(Width, Length, Board) :-
+% init_board(+Width, +Length, +Content, -Board)
+%% Initialize the board with the specified dimensions and cell content
+%% In the case of our game, the Content is a stack of turtles
+init_board(Width, Length, Content, Board) :-
   length(Board, Length),
-  maplist(init_row(Width), Board).
-% init_row(+Width, -Row)
-%% Initialize a row with empty cells
-init_row(Width, Row) :-
+  maplist(init_row(Width, Content), Board).
+% init_row(+Width, +Content, -Row)
+%% Initialize a row with the specified width and cell content
+init_row(Width, Content, Row) :-
   length(Row, Width),
-  maplist(init_cell, Row).
-% init_cell(-Cell)
-%% Initialize a cell with an empty list (to be used as a stack)
-init_cell([]).
+  maplist(init_cell(Content), Row).
+% init_cell(+Content, -Cell)
+%% Initialize a cell with the specified content
+init_cell(Content, Content).
 
 % board_sizes(+Board, -Width, -Length)
 %% Get the width and length of the board
@@ -64,41 +79,122 @@ board_sizes(Board, Width, Length) :-
   nth1(1, Board, Row),
   length(Row, Width).
 
-% cell_at(+Board, +RowNum, +ColNum, ?Stack)
-%% Returns the stack of turtles at the specified cell or checks if the cell is empty
-cell_at(Board, RowNum, ColNum, Stack) :-
-  nth1(RowNum, Board, Row),
-  nth1(ColNum, Row, Stack).
+% cell_at(+Board, +RowIndex, +ColumnIndex, ?Content)
+%% Return the content at the specified cell or check if the cell is empty (depending of the presence of Content)
+%% In the case of our game, the Content is a stack of turtles
+cell_at(Board, RowIdx, ColIdx, Content) :-
+  nth1(RowIdx, Board, Row),
+  nth1(ColIdx, Row, Content).
 
-% cell_empty(+Board, +RowNum, +ColNum)
-%% Check if the cell is empty
-cell_empty(Board, RowNum, ColNum) :-
-  cell_at(Board, RowNum, ColNum, []). % Empty cell is represented by an empty list
+% set_cell(+Board, +RowIndex, +ColumnIndex, +Content, -NewBoard)
+%% Set the content at the specified cell in the board
+%% In the case of our game, the Content is a stack of turtles
+set_cell(Board, RowIdx, ColIdx, Content, NewBoard) :-
+  nth1(RowIdx, Board, Row, RestBoard),
+  nth1(ColIdx, Row, _, RestRow),
+  nth1(ColIdx, NewRow, Content, RestRow),
+  nth1(RowIdx, NewBoard, NewRow, RestBoard).
+
+% cell_empty(+Board, +RowIndex, +ColumnIndex)
+%% Check if the cell is an empty stack
+cell_empty(Board, RowIdx, ColIdx) :-
+  cell_at(Board, RowIdx, ColIdx, []). % Empty stack is represented by an empty list
 
 
-%% Game Logic
+% valid_coords(+Board, +RowIndex, +ColumnIndex, +TurtleColor)
+%% Check if the coordinates are valid for hatching and normal moves
+%% - Y is valid depending on the turtle's color (scoring is out-of-bounds different for each player)
+valid_coords(Board, RowIdx, ColIdx, Color) :-
+  valid_x(Board, ColIdx),
+  valid_y(Board, RowIdx, Color).
 
-% find_turtle(+Board, +Turtle, -RowNum, -ColNum)
-%% Returns the position of the turtle on the board
-find_turtle(Board, Turtle, RowNum, ColNum) :-
+% valid_x(+Board, +ColumnNumber)
+%% Check if the X coordinate is within the board
+valid_x(Board, ColIdx) :-
+  board_sizes(Board, Width, _),
+  between(1, Width, ColIdx).
+
+% valid_y(+Board, +RowIndex, +TurtleColor)
+%% Check if the Y coordinate is within the board
+%% White turtles score when they reach above the top row (RowIdx 0) - black turtles' side
+valid_y(Board, RowIdx, white) :-
+  board_sizes(Board, _, Length),
+  between(0, Length, RowIdx).
+%% Black turtles score when they reach below the bottom row (RowIdx Length+1) - white turtles' side
+valid_y(Board, RowIdx, black) :-
+  board_sizes(Board, _, Length),
+  between(1, Length+1, RowIdx).
+
+
+
+%% 2. Move Logic
+
+%%% 2.1. Miscellanous
+
+% find_stack_to_move(+Board, +Turtle, -RowIdx, -ColIdx, -TurtleStack)
+%% Find the turtle on the board and return the stack of turtles above it, including the turtle itself - stack-to-move
+%% Return the position of the TurtleStack on the board
+find_stack_to_move(Board, (Color-Number), RowIdx, ColIdx, TurtleStack) :-
+  find_turtle(Board, (Color-Number), RowIdx, ColIdx),
+  cell_at(Board, RowIdx, ColIdx, TurtleStack),
+  split_stack(TurtleStack, (Color-Number), StackAbove, _),
+  append(StackAbove, [(Color-Number)], TurtleStack).
+
+% find_turtle(+Board, +Turtle, -RowIdx, -ColIdx)
+%% Return the position of the turtle on the board
+find_turtle(Board, Turtle, RowIdx, ColIdx) :-
   board_sizes(Board, Width, Length),
-  between(1, Length, RowNum),
-  between(1, Width, ColNum),
-  turtle_in_cell(Board, RowNum, ColNum, Turtle).
+  between(1, Length, RowIdx),
+  between(1, Width, ColIdx),
+  turtle_in_cell(Board, RowIdx, ColIdx, Turtle).
 
-% turtle_in_cell(+Board, +Turtle, +RowNum, +ColNum)
+% turtle_in_cell(+Board, +Turtle, +RowIndex, +ColumnIndex)
 %% Check if the turtle is in the specified cell
-turtle_in_cell(Board, RowNum, ColNum, Turtle) :-
-  cell_at(Board, RowNum, ColNum, Stack),
-  member(Turtle, Stack).
+turtle_in_cell(Board, RowIdx, ColIdx, Turtle) :-
+  cell_at(Board, RowIdx, ColIdx, TurtleStack),
+  member(Turtle, TurtleStack).
 
 
-% cell_can_climb(+Board, +RowNum, +ColNum, +Turtle)
-%% Check if the turtle can climb the top turtle of the stack at the specified cell
-%% Turtle is lighter than the top turtle of the stack
-cell_can_climb(Board, RowNum, ColNum, Turtle) :-
-  cell_at(Board, RowNum, ColNum, [TopTurtle|_]),
-  turtle_can_climb(Turtle, TopTurtle).
+% dest_coords(+RowIndexber, +ColumnNumber, +Direction, -DestinationRowIdxber, -DestinationColumnNumber)
+%% Calculate the destination coordinates based on the direction of a normal move
+dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx) :-
+  dir_displacement(Direction, RowDisplacement, ColDisplacement),
+  DestRowIdx is RowIdx + RowDisplacement,
+  DestColIdx is ColIdx + ColDisplacement.
+
+%% dir_displacement(+Direction, -RowDisplacement, -ColDisplacement)
+%%% Translate the direction atom to the row and column displacement
+dir_displacement(up, -1, 0).
+dir_displacement(down, 1, 0).
+dir_displacement(left, 0, -1).
+dir_displacement(right, 0, 1).
+
+
+%%% 2.2. Validating Moves (Scoring, To Empty, Climb, Push, Climb and Push)
+
+% stack_can_move(+Board, +RowIndex, +ColumnIndex, +TurtleStack)
+%% Check if the TurtleStack can move to the specified cell (base turtle is strong enough to carry the turtles above it)
+stack_can_move(Board, RowIdx, ColIdx, TurtleStack) :-
+  last(AboveTurtle, (Color-Number), TurtleStack), % Base turtle is the last turtle in the stack
+  combined_weight(AboveTurtle, Weight),
+  Number > Weight.
+
+
+% cell_can_score(+Board, +RowIndex, +ColumnIndex, +TurtleColor)
+%% Check if the move is a scoring move
+cell_can_score(Board, 0, ColIdx, white).
+cell_can_score(Board, RowIdx, ColIdx, black) :-
+  board_sizes(Board, _, Length),
+  RowIdx is Length+1.
+
+
+% cell_can_climb(+Board, +RowIndex, +ColumnIndex, +TurtleStack)
+%% Check if the TurtleStack can climb the top turtle of the stack at the specified (destination) cell
+%% True if the base of TurtleStack is lighter than the top turtle of the stack in the cell
+cell_can_climb(Board, RowIdx, ColIdx, TurtleStack) :-
+  last(TurtleStack, BaseTurtle),
+  cell_at(Board, RowIdx, ColIdx, [TopTurtle|_]),
+  turtle_can_climb(BaseTurtle, TopTurtle).
 
 % turtle_can_climb(+Turtle, +TargetTurtle)
 %% Check if the turtle can climb the target turtle
@@ -106,47 +202,82 @@ turtle_can_climb((_-Number), (_-TargetNumber)) :-
   Number < TargetNumber.
 
 
-% cell_can_push(+Board, +RowNum, +ColNum, +Turtle)
-%% Check if the turtle can push the stack at the specified cell
-%% Turtle is stronger than the weight of the stack
-cell_can_push(Board, RowNum, ColNum, Turtle) :-
-  cell_at(Board, RowNum, ColNum, TurtleStack),
-  length(TurtleStack, StackLength),
-  nth1(StackLength, TurtleStack, BaseTurtle), % Base turtle is the last turtle in the stack
-  turtle_can_push(Turtle, BaseTurtle, TurtleStack).
+% cell_can_push(+Board, +RowIndex, +ColumnIndex, +TurtleStack)
+%% Check if the TurtleStack can push the stack at the specified (destination) cell
+%% True if the base of TurtleStack is stronger than the weight of the stack in the cell
+cell_can_push(Board, RowIdx, ColIdx, TurtleStack) :-
+  last(TurtleStack, BaseTurtle),
+  cell_at(Board, RowIdx, ColIdx, DestStack),
+  turtle_can_push(BaseTurtle, DestStack).
 
-% turtle_can_push(+Turtle, +TargetTurtle, +TurtleStack)
-%% Check if the Turtle can push the stack
-%% Turtle stack is pushable if the combined weight of the stack (base turtle included) is less than the turtle
-turtle_can_push((_-Number), _, TurtleStack) :-
+% turtle_can_push(+Turtle, +TargetTurtleStack)
+%% Check if the Turtle can push the TargetTurtleStack
+%% True if the combined weight of the target stack (base turtle included) is less than the Turtle
+turtle_can_push((_-Number), TurtleStack) :-
   combined_weight(TurtleStack, Weight),
   Number >= Weight.
 
-% cell_can_climb_push(+Board, +RowNum, +ColNum, +Turtle)
-%% Check if the turtle can climb the stack and push what's above it at the specified cell
-cell_can_climb_push(Board, RowNum, ColNum, Turtle) :-
-  cell_at(Board, RowNum, ColNum, TurtleStack),
-  stack_can_climb_push(Turtle, TurtleStack, []),
 
-% stack_can_climb_push(+Turtle, +Stack, +CheckedStack)
+% cell_can_climb_push(+Board, +RowIndex, +ColumnIndex, +TurtleStack)
+%% Check if the TurtleStack can climb the stack at the specified (destination) cell and push what's above it
+cell_can_climb_push(Board, RowIdx, ColIdx, TurtleStack) :-
+  last(TurtleStack, BaseTurtle),
+  cell_at(Board, RowIdx, ColIdx, DestStack),
+  stack_can_climb_push(BaseTurtle, DestStack, [], _).
+
+% stack_can_climb_push(+Turtle, +Stack, +CheckedStack, -DisplacedTurtleStack)
+%% <<<Follows "resolving movement methodically" section of the game rules>>>
 %% Check if any turtle in the stack is climbable and pushable (from the top to the bottom) by Turtle
-%% Follows "resolving movement methodically" section of the game rules
-%% TODO CHANGE THIS DESCRIPTION VVVVVVVVV
 %% CheckedStack contains the stack that has been checked so far
-%% - i.e. the stack above the current turtle being checked - useful for weight calculation
-%% - at the end, the stack that needs to be moved is in CheckedStack
-stack_can_climb_push(_, [], _).
-stack_can_climb_push(Turtle, [TopTurtle|Rest], CheckedStack) :-
+%% - i.e. the stack above the current turtle being checked - useful for weight calculation (for pushing)
+%% - when a turtle is found that can be climbed and the turtles above it can be pushed, the stack of displaced turtles is returned
+%% - when it is empty, the displaced stack (CheckedStack) is the initial stack being checked and is returned in DisplacedTurtleStack if the Turtle can push it
+stack_can_climb_push(Turtle, [], CheckedStack, CheckedStack) :-
+  turtle_can_push(Turtle, CheckedStack),
+  !.
+stack_can_climb_push(Turtle, [TopTurtle|Rest], CheckedStack, CheckedStack) :-
   turtle_can_climb(Turtle, TopTurtle),
-  turtle_can_push(Turtle, TopTurtle, CheckedStack),
-  !,
-  append(CheckedStack, [TopTurtle], NewCheckedStack).
-stack_can_climb_push(Turtle, [_|Rest], _) :-
-  stack_can_climb_push(Turtle, Rest).
+  turtle_can_push(Turtle, CheckedStack),
+  !.
+stack_can_climb_push(Turtle, [TopTurtle|Rest], CheckedStack, _) :-
+  stack_can_climb_push(Turtle, Rest, [TopTurtle|CheckedStack], _).
 
 
-can_move(Board, RowNum, ColNum, (Color-Number)) :-
-  cell_at(Board, RowNum, ColNum, TurtleStack),
-  split_stack(TurtleStack, (Color-Number), AboveTurtle, _),
-  combined_weight(AboveTurtle, Weight),
-  Number > Weight.
+%%% 2.3. Moving Turtles (Scoring, To Empty, Climb, Push, Climb and Push)
+
+% normal_move_score(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
+%% Move the turtle off the opponent's side of the board to score
+%% Return the new board state
+normal_move_score(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
+  set_cell(Board, RowIdx, ColIdx, [], NewBoard).
+
+% move_empty(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
+%% Move the turtle to an empty cell with coordinates (RowIdx, ColIdx)
+%% Return the new board state
+move_empty(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
+  set_cell(Board, RowIdx, ColIdx, TurtleStack, NewBoard).
+
+% move_climb(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
+%% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be climbed
+%% Return the new board state
+move_climb(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
+  cell_at(Board, RowIdx, ColIdx, DestStack),
+  push_stack(TurtleStack, DestStack, NewStack),
+  set_cell(Board, RowIdx, ColIdx, NewStack, NewBoard).
+
+% move_push(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard, -DisplacedTurtleStack)
+%% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be pushed
+%% Return the new board state and the stack of turtles that were displaced
+move_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack) :-
+  cell_at(Board, RowIdx, ColIdx, DisplacedTurtleStack),
+  set_cell(Board, RowIdx, ColIdx, TurtleStack, NewBoard).
+
+% move_climb_push(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
+%% Move the TurtleStack to a cell with coordinates (RowIdx, ColIdx) with a stack which has at least 1 element that can be climbed and pushed
+%% Return the new board state
+move_climb_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack) :-
+  cell_at(Board, RowIdx, ColIdx, DestStack),
+  stack_can_climb_push(TurtleStack, DestStack, [], DisplacedTurtleStack),
+  append(DisplacedTurtleStack, StackBelow, DestStack),
+  push_stack(TurtleStack, StackBelow, NewStack),
+  set_cell(Board, RowIdx, ColIdx, NewStack, NewBoard).

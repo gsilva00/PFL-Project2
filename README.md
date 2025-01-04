@@ -99,21 +99,22 @@ true.
 
 This will print the values of X and Y to the console or write them to a file.
 
-**Query 2:** Give me a way to clear the terminal in Prolog.
+**Query 2:** Give me a way to clear the terminal and put the output on top of the terminal in Prolog.
 
 **Answer 2:**
-You can add a predicate to clear the terminal in Linux by using the ANSI escape code. Here is how you can do it:
+To clear the terminal and put the output on top of the terminal in SICStus Prolog, you can use the clear ANSI escape code. Here is how you can do it:
 
 ```prolog
-% ...existing code...
+clear_terminal :-
+    write('\e[H\e[2J').
 
-% clear_console.
-% Clears the terminal screen.
-clear_console :-
-    write('\33\[2J').
-
-% ...existing code...
+% Example usage
+example :-
+    clear_terminal,
+    write('This is the output on top of the terminal.').
 ```
+
+When you run example/0, it will clear the terminal and then print the message at the top.
 
 **Query 3:** Write me write/1 predicates that draw this ASCII art:
 
@@ -182,6 +183,7 @@ translate_turtle(Color-Number, Code) :-
 
 ### Prolog documentation (SICStus)
 
+[compound terms](https://sicstus.sics.se/sicstus/docs/3.12.4/html/sicstus/Compound-Terms.html)
 [format predicate](https://sicstus.sics.se/sicstus/docs/4.9.0/html/sicstus/mpg_002dref_002dformat.html)
 [between library](https://sicstus.sics.se/sicstus/docs/latest/html/sicstus.html/lib_002dbetween.html)
 [consult predicate](https://sicstus.sics.se/sicstus/docs/3.7.1/html/sicstus_8.html)
