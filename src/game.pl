@@ -69,9 +69,9 @@ choose_players_names(cc, 'Computer 1', 'Computer 2').
 choose_first_player(hh, Player1Name, Player2Name, Choice) :-
   display_first_player_menu(Player1Name, Player2Name),
   get_menu_choice_ln('Option', 1, 2, Choice).
-choose_first_player(hc, Player1Name, 'Computer', Player1Name).
-choose_first_player(ch, 'Computer', Player2Name, Player2Name).
-choose_first_player(cc, 'Computer 1', 'Computer 2', 'Computer 1').
+choose_first_player(hc, Player1Name, 'Computer', 1).
+choose_first_player(ch, 'Computer', Player2Name, 1).
+choose_first_player(cc, 'Computer 1', 'Computer 2', 1).
 
 
 %% choose_difficulty(+Gamemode, -Player1Level, -Player2Level)
@@ -132,7 +132,7 @@ initial_state(game_config(Width, Length, Player1Name-Player1Level, Player2Name-P
 game_loop(GameState) :-
   game_over(GameState, WinnerName),
   !,
-  display_winner(WinnerName).
+  display_result(WinnerName).
 game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
   display_game(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)),
   nth1(Turn, [Player1Level, Player2Level], CurrPlayerLevel),
@@ -145,6 +145,27 @@ game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Play
 % game_over(+GameState, -Winner)
 %% Check if the game is over
 %% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
+%% When there are no valid moves for the current player, and the number of scored turtles is equal, the game ends in a draw
+%% When there are no valid moves for the current player, the player who has scored more turtles wins
+game_over(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), 'Draw') :-
+  valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), []),
+  length(Scored1, Length1),
+  length(Scored2, Length1),
+  !.
+game_over(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player1Name) :-
+  valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), []),
+  length(Scored1, Length1),
+  length(Scored2, Length2),
+  Length1 > Length2,
+  !.
+game_over(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player2Name) :-
+  valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), []),
+  length(Scored1, Length1),
+  length(Scored2, Length2),
+  Length1 < Length2,
+  !.
+
+%% When a player has 3 turtles in the scored area, he wins
 game_over(game_state(_, _-_, _, Scored1-Scored2, Player1Name-_, _-_), Player1Name) :-
   length(Scored1, Length),
   Length >= 3,
@@ -173,9 +194,14 @@ choose_move(GameState, easy, Turtle-Direction) :-
 %% Choose hard-computer player's move
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), hard, Turtle-Direction) :-
   valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
-  value(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player2Name, Number),
-  nth1(Turn, [Player1Name, Player2Name], CurrPlayerName),
-  %% TODO: Implement HARD AI algorithm
+  nth1(Turn, [Player1Name-Player1Level, Player2Name-Player2Level], Player),
+  setof(Value-Mv, NewState^(
+    member(Mv, ListOfMoves),
+    move(GameState, Mv, NewState),
+    value(NewState, Player, Value)
+  ), MovesValues),
+  reverse(MovesValues, RevMovesValues),
+  select_random_best(RevMovesValues, Turtle-Direction),
   !.
 
 
@@ -320,7 +346,7 @@ move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Le
 %% Move is already validated because it was chosen from the list of valid moves. Still, most of the validations are repeated in move_normal/12
 move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction, game_state(NewTurn, NewNest1-NewNest2, NewBoard, NewScored1-NewScored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
   find_stack_to_move(Board, Turtle, RowIdx, ColIdx, TurtleStack),
-  move_normal(false, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2),
+  move_normal(false, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, Turtle, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2),
   NewTurn is Turn rem 2 + 1,
   !.
 
@@ -334,25 +360,25 @@ move_hatch(true, _, Nest1-Nest2, _, Scored1-Scored2, _, _, [], _, Nest1-Nest2, S
 %% Move previously displaced TurtleStack off the board to the sides - return turtles to the nests and stop chain reaction
 %% Falling off the sides or the turtle's own end is allowed only for chain reactions from pushing turtles - these are the only moves that fail X coordinate validation
 move_hatch(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
-  last(TurtleStack, (Color-_)),
+  last(TurtleStack, Color-Number),
   \+valid_x(Board, RowIdx, Color),
-  move_outside_board(sides, Color, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewScored1-NewScored2),
+  move_outside_board(sides, Color, Board, RowIdx, ColIdx, Color-Number, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewBoard, NewScored1-NewScored2),
   !.
 %% Handle chain reactions from pushing turtles
 %% Move previously displaced TurtleStack off the board to the end with the base turtle's own color - return turtles to respective nests/scored and stop chain reaction
 %% Falling off the turtle's own end is allowed only for chain reactions from pushing turtles - these are the only moves that fail Y coordinate validation
 move_hatch(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
-  last(TurtleStack, (Color-_)),
+  last(TurtleStack, Color-Number),
   \+valid_y(Board, ColIdx, Color),
-  move_outside_board(ends, Color, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewScored1-NewScored2),
+  move_outside_board(ends, Color, Board, RowIdx, ColIdx, Color-Number, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewBoard, NewScored1-NewScored2),
   !.
 %% Handle chain reactions from pushing turtles
 %% Move previously displaced TurtleStack because it is able to move the opposite end of the board (scoring move) - return turtles to the respective nests/scored and stop chain reaction
 move_hatch(true, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, TurtleStack, NewBoard, UpdatedNest1-UpdatedNest2, NewScored1-NewScored2) :-
-  last(TurtleStack, (Color-_)), % Get the color of the base turtle in the stack
+  last(TurtleStack, Color-Number),         % Get the color of the base turtle in the stack
   cell_can_score(Board, RowIdx, ColIdx, Color),
-  move_score(Board, RowIdx, ColIdx, TurtleStack, NewBoard),
-  move_outside_board(ends, Color, TurtleStack, Nest1-Nest2, Scored1-Scored2, UpdatedNest1-UpdatedNest2, NewScored1-NewScored2),
+  opposite_color(Color, OppositeColor), % If the turtle is able to score, it is on the opposite end of the board
+  move_outside_board(ends, OppositeColor, UpdatedBoard, RowIdx, ColIdx, Color-Number, TurtleStack, Nest1-Nest2, Scored1-Scored2, UpdatedNest1-UpdatedNest2, NewBoard, NewScored1-NewScored2),
   !.
 %% Move the turtle to the hatching cell (empty cell)
 %% OR Move previously displaced TurtleStack because it is able to move to the empty cell - continue chain reaction
@@ -398,76 +424,74 @@ move_hatch(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, TurtleS
   !.
 
 
-% move_normal(+IsChainReaction, +Turn, +(Nest1-Nest2), +Board, +(Scored1-Scored2), +RowIndex, +ColumnIndex, +Direction, +TurtleStack, -NewBoard, -(NewNest1-NewNest2), -(NewScored1-NewScored2))
+% move_normal(+IsChainReaction, +Turn, +(Nest1-Nest2), +Board, +(Scored1-Scored2), +RowIndex, +ColumnIndex, +Direction, +Turtle, +TurtleStack, -NewBoard, -(NewNest1-NewNest2), -(NewScored1-NewScored2))
 %% (RowIdx, ColIdx) - Coordinates of the starting cell, where TurtleStack is located (source)
 %% Handle chain reactions from pushing turtles
 %% No more turtles to push (no more chain reactions from pushing)
-move_normal(true, _, Nest1-Nest2, _, Scored1-Scored2, _, _, _, [], _, Nest1-Nest2, Scored1-Scored2).
+move_normal(true, _, Nest1-Nest2, _, Scored1-Scored2, _, _, _, _, [], _, Nest1-Nest2, Scored1-Scored2).
 %% Handle chain reactions from pushing turtles
 %% Move TurtleStack off the board to the sides - return turtles to the nests and stop chain reaction
 %% Falling off the sides or the turtle's own end is allowed only for chain reactions from pushing turtles - these are the only moves that fail X coordinate validation
-move_normal(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+move_normal(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, Turtle, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   last(TurtleStack, (Color-_)),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   \+valid_x(Board, DestRowIdx, Color),
-  move_outside_board(sides, Color, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewScored1-NewScored2),
+  move_outside_board(sides, Color, Board, RowIdx, ColIdx, Turtle, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewBoard, NewScored1-NewScored2),
   !.
 %% Handle chain reactions from pushing turtles
 %% Move DisplacedTurtleStack off the board to the end with the base turtle's own color - return turtles to respective nests/scored and stop chain reaction
 %% Falling off the turtle's own end is allowed only for chain reactions from pushing turtles - these are the only moves that fail Y coordinate validation
-move_normal(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+move_normal(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, Turtle, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   last(TurtleStack, (Color-_)),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   \+valid_y(Board, DestColIdx, Color),
-  move_outside_board(ends, Color, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewScored1-NewScored2),
+  move_outside_board(ends, Color, Board, RowIdx, ColIdx, Turtle, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewBoard, NewScored1-NewScored2),
   !.
 %% Move TurtleStack, making a scoring move
 %% OR Move previously displaced TurtleStack because it is able to make a scoring move - return turtles to the respective nests/scored and stop chain reaction
-move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, Turtle, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   last(TurtleStack, (Color-_)),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_can_score(Board, DestRowIdx, DestColIdx, Color),
-  move_score(Board, RowIdx, ColIdx, TurtleStack, NewBoard),
-  move_outside_board(ends, Color, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewScored1-NewScored2),
+  opposite_color(Color, OppositeColor),
+  move_outside_board(ends, OppositeColor, Board, RowIdx, ColIdx, Turtle, TurtleStack, Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewBoard, NewScored1-NewScored2),
   !.
 %% Move TurtleStack to the normal cell (empty cell)
 %% OR Move previously displaced TurtleStack because it is able to move to the empty cell - continue chain reaction
-move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, Nest1-Nest2, Scored1-Scored2) :-
-  last(TurtleStack, BaseTurtle),
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, Turtle, TurtleStack, NewBoard, Nest1-Nest2, Scored1-Scored2) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_empty(Board, DestRowIdx, DestColIdx),
-  move_empty(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, BaseTurtle, TurtleStack, NewBoard),
+  move_empty(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, Turtle, TurtleStack, NewBoard),
   !.
 %% Move TurtleStack to the normal cell (occupied cell - climb top of stack)
 %% OR Move previously displaced TurtleStack because it is able to climb the top of next turtle stack - continue chain reaction
-move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, Nest1-Nest2, Scored1-Scored2) :-
-  last(TurtleStack, BaseTurtle),
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, Turtle, TurtleStack, NewBoard, Nest1-Nest2, Scored1-Scored2) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_can_climb(Board, DestRowIdx, DestColIdx, TurtleStack),
-  move_climb(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, BaseTurtle, TurtleStack, NewBoard),
+  move_climb(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, Turtle, TurtleStack, NewBoard),
   !.
 %% Move TurtleStack to the normal cell (occupied cell - push stack)
 %% OR Move previously displaced TurtleStack because it is able to push the next turtle stack - continue chain reaction
-move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
-  last(TurtleStack, BaseTurtle),
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, Turtle, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_can_push(Board, DestRowIdx, DestColIdx, TurtleStack),
-  move_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, BaseTurtle, TurtleStack, UpdatedBoard, DisplacedTurtleStack),
+  move_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, Turtle, TurtleStack, UpdatedBoard, DisplacedTurtleStack),
   !,
   % Initial DisplacedTurtleStack coords are TurtleStack's destination coord. Direction of chain reactions is the same as the initial move
-  move_normal(true, Turn, Nest1-Nest2, UpdatedBoard, Scored1-Scored2, DestRowIdx, DestColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).
+  last(DisplacedTurtleStack, NewBaseTurtle),
+  move_normal(true, Turn, Nest1-Nest2, UpdatedBoard, Scored1-Scored2, DestRowIdx, DestColIdx, NewBaseTurtle, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).
 %% Move TurtleStack to the normal cell (occupied cell - climb and push stack)
 %% OR Move previously displaced TurtleStack because it is able to climb and push one of the turtles in the next turtle stack - continue chain reaction
-move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
-  last(TurtleStack, BaseTurtle),
+move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, Turtle, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_can_climb_push(Board, DestRowIdx, DestColIdx, TurtleStack),
-  move_climb_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, BaseTurtle, TurtleStack, UpdatedBoard, DisplacedTurtleStack),
+  move_climb_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, BaseTurtle, Turtle, TurtleStack, UpdatedBoard, DisplacedTurtleStack),
   !,
-  move_normal(true, Turn, Nest1-Nest2, UpdatedBoard, Scored1-Scored2, DestRowIdx, DestColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).
+  last(DisplacedTurtleStack, NewBaseTurtle),
+  move_normal(true, Turn, Nest1-Nest2, UpdatedBoard, Scored1-Scored2, DestRowIdx, DestColIdx, NewBaseTurtle, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).
 %% Handles chain reactions from pushing turtles
 %% DisplacedTurtleStack is not able to climb, push, or climb and push the next turtle - return turtles to the nests and stop chain reaction
-move_normal(true, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+move_normal(true, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, _, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   add_to_lists(Nest1-Nest2, TurtleStack, NewNest1-NewNest2),
   !.
 

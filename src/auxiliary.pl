@@ -79,6 +79,12 @@ board_sizes(Board, Width, Length) :-
   nth1(1, Board, Row),
   length(Row, Width).
 
+% max_cell_size(+Board, -MaxSize)
+%% Get the maximum size of all the cells on the board
+max_cell_size(Board, MaxSize) :-
+  findall(Size, (member(Row, Board), member(Cell, Row), length(Cell, Size)), Sizes),
+  max_member(MaxSize, Sizes).
+
 % cell_at(+Board, +RowIndex, +ColumnIndex, ?Content)
 %% Return the content at the specified cell or check if the cell is empty (depending of the presence of Content)
 %% In the case of our game, the Content is a stack of turtles
@@ -99,12 +105,6 @@ set_cell(Board, RowIdx, ColIdx, Content, NewBoard) :-
 %% Check if the cell is an empty stack
 cell_empty(Board, RowIdx, ColIdx) :-
   cell_at(Board, RowIdx, ColIdx, []). % Empty stack is represented by an empty list
-
-% max_cell_size(+Board, -MaxSize)
-% Get the maximum size of all the cells on the board
-max_cell_size(Board, MaxSize) :-
-  findall(Size, (member(Row, Board), member(Cell, Row), length(Cell, Size)), Sizes),
-  max_member(MaxSize, Sizes).
 
 
 % valid_coords(+Board, +RowIndex, +ColumnIndex, +TurtleColor)
@@ -184,6 +184,45 @@ dir_displacement(up, -1, 0).
 dir_displacement(down, 1, 0).
 dir_displacement(left, 0, -1).
 dir_displacement(right, 0, 1).
+
+
+% opposite_color(+Color, -OppositeColor)
+%% Get the opposite color of the given color
+opposite_color(white, black).
+opposite_color(black, white).
+
+%% max(+X, +Y, -Max)
+%% Get the maximum of two numbers
+max(X, Y, X) :-
+  X >= Y,
+  !.
+max(_, Y, Y).
+
+
+% select_random_best(+MovesWithValues, -BestMove)
+%% Selects a random move among those with the highest value
+select_random_best([Value-Move|Rest], BestMove) :-
+  highest_val_moves([Value-Move|Rest], BestMoves),
+  random_member(BestMove, BestMoves).
+
+% highest_val_moves(+MovesWithValues, -HighestValMoves)
+%% Selects all moves with the highest value
+highest_val_moves([Value-Move|Rest], HighestValMoves) :-
+  highest_val_moves(Rest, Value, [Move], HighestValMoves).
+% highest_val_moves_aux(+MovesWithValues, +Value, +Acc, -HighestValMoves)
+%% Auxiliary predicate for highest_val_moves/2
+highest_val_moves_aux([], _, Acc, Acc).
+highest_val_moves_aux([Value-Move|Rest], Value, Acc, HighestValMoves) :-
+  !,
+  highest_val_moves_aux(Rest, Value, [Move|Acc], HighestValMoves).
+highest_val_moves_aux([NewValue-_|Rest], Value, Acc, HighestValMoves) :-
+  NewValue < Value,
+  !,
+  highest_val_moves_aux(Rest, Value, Acc, HighestValMoves).
+highest_val_moves_aux([NewValue-NewMove|Rest], _, _Acc, HighestValMoves) :-
+  NewValue > Value,
+  highest_val_moves_aux(Rest, NewValue, [NewMove], HighestValMoves),
+  !.
 
 
 % add_to_lists(+(List1-List2), +TurtleStack, -(NewList1-NewList2))
@@ -281,30 +320,32 @@ stack_can_climb_push(Turtle, [TopTurtle|Rest], CheckedStack, _) :-
 %%% 2.3. Moving Turtles (Scoring, To Empty, Climb, Push, Climb and Push)
 
 % move_empty(+Board, +InitialRowIndex, +InitialColumnIndex, +DestinationRowIndex, +DestinationColumnIndex, +BaseTurtle, +TurtleStack, -NewBoard)
-%% Move the turtle to an empty cell with coordinates (RowIdx, ColIdx)
+%% Move the stack above and including the BaseTurtle (TurtleStack) to an empty cell with coordinates (RowIdx, ColIdx)
 %% Remove the moving stack from the initial position's cell
 %% Return the new board state
 move_empty(Board, InitRowIdx, InitColIdx, DestRowIdx, DestColIdx, BaseTurtle, TurtleStack, NewBoard) :-
-  split_stack(TurtleStack, BaseTurtle, AboveStack, BelowStack),
-  set_cell(Board, InitRowIdx, InitColIdx, BelowStack, TempBoard),
-  set_cell(TempBoard, DestRowIdx, DestColIdx, TurtleStack, NewBoard).
+  cell_at(Board, InitRowIdx, InitColIdx, FullTurtleStack),        % Whole Stack in the initial position (includes the moving stack)
+  append(TurtleStack, StackBelow, FullTurtleStack),               % Get the stack below the moving stack
+  set_cell(Board, InitRowIdx, InitColIdx, StackBelow, TempBoard), % Stack below remains in the cell
+  move_empty(TempBoard, DestRowIdx, DestColIdx, TurtleStack, NewBoard).
 % move_empty(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
-%% Move the turtle to an empty cell with coordinates (RowIdx, ColIdx)
+%% Move the stack above and including the BaseTurtle (TurtleStack) to an empty cell with coordinates (RowIdx, ColIdx)
 %% Without clearing the initial position's cell (for hatch moves and 2nd part of normal moves)
 %% Return the new board state
 move_empty(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
   set_cell(Board, RowIdx, ColIdx, TurtleStack, NewBoard).
 
 % move_climb(+Board, +InitialRowIndex, +InitialColumnIndex, +DestinationRowIndex, +DestinationColumnIndex, +BaseTurtle, +TurtleStack, -NewBoard)
-%% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be climbed
+%% Move the stack above and including the BaseTurtle (TurtleStack) to a cell with coordinates (RowIdx, ColIdx) with a stack that can be climbed
 %% Remove the moving stack from the initial position's cell
 %% Return the new board state
 move_climb(Board, InitRowIdx, InitColIdx, DestRowIdx, DestColIdx, BaseTurtle, TurtleStack, NewBoard) :-
-  split_stack(TurtleStack, BaseTurtle, AboveStack, BelowStack),
-  set_cell(Board, InitRowIdx, InitColIdx, BelowStack, TempBoard),
+  cell_at(Board, InitRowIdx, InitColIdx, FullTurtleStack),
+  append(TurtleStack, StackBelow, FullTurtleStack),
+  set_cell(Board, InitRowIdx, InitColIdx, StackBelow, TempBoard),
   move_climb(TempBoard, DestRowIdx, DestColIdx, TurtleStack, NewBoard).
 % move_climb(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
-%% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be climbed
+%% Move the stack above and including the BaseTurtle (TurtleStack) to a cell with coordinates (RowIdx, ColIdx) with a stack that can be climbed
 %% Without clearing the initial position's cell (for hatch moves and 2nd part of normal moves)
 %% Return the new board state
 move_climb(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
@@ -313,15 +354,16 @@ move_climb(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
   set_cell(Board, RowIdx, ColIdx, NewStack, NewBoard).
 
 % move_push(+Board, +InitialRowIndex, +InitialColumnIndex, +DestinationRowIndex, +DestinationColumnIndex, +BaseTurtle, +TurtleStack, -NewBoard, -DisplacedTurtleStack)
-%% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be pushed
+%% Move the stack above and including the BaseTurtle (TurtleStack) to a cell with coordinates (RowIdx, ColIdx) with a stack that can be pushed
 %% Remove the moving stack from the initial position's cell
 %% Return the new board state and the stack of turtles that were displaced
 move_push(Board, InitRowIdx, InitColIdx, DestRowIdx, DestColIdx, BaseTurtle, TurtleStack, NewBoard, DisplacedTurtleStack) :-
-  split_stack(TurtleStack, BaseTurtle, AboveStack, BelowStack),
-  set_cell(Board, InitRowIdx, InitColIdx, BelowStack, TempBoard),
+  cell_at(Board, InitRowIdx, InitColIdx, FullTurtleStack),
+  append(TurtleStack, StackBelow, FullTurtleStack),
+  set_cell(Board, InitRowIdx, InitColIdx, StackBelow, TempBoard),
   move_push(TempBoard, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack).
 % move_push(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard, -DisplacedTurtleStack)
-%% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be pushed
+%% Move the stack above and including the BaseTurtle (TurtleStack) to a cell with coordinates (RowIdx, ColIdx) with a stack that can be pushed
 %% Without clearing the initial position's cell (for hatch moves and 2nd part of normal moves)
 %% Return the new board state and the stack of turtles that were displaced
 move_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack) :-
@@ -333,8 +375,9 @@ move_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack) :-
 %% Remove the moving stack from the initial position's cell
 %% Return the new board state and the stack of turtles that were displaced
 move_climb_push(Board, InitRowIdx, InitColIdx, DestRowIdx, DestColIdx, BaseTurtle, TurtleStack, NewBoard, DisplacedTurtleStack) :-
-  split_stack(TurtleStack, BaseTurtle, AboveStack, BelowStack),
-  set_cell(Board, InitRowIdx, InitColIdx, BelowStack, TempBoard),
+  cell_at(Board, InitRowIdx, InitColIdx, FullTurtleStack),
+  append(TurtleStack, StackBelow, FullTurtleStack),
+  set_cell(Board, InitRowIdx, InitColIdx, StackBelow, TempBoard),
   move_climb_push(TempBoard, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack).
 % move_climb_push(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
 %% Move the TurtleStack to a cell with coordinates (RowIdx, ColIdx) with a stack which has at least 1 element that can be climbed and pushed
@@ -348,26 +391,27 @@ move_climb_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleSta
   set_cell(Board, RowIdx, ColIdx, NewStack, NewBoard).
 
 
-% move_score(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
-%% Move the turtle off the opponent's side of the board to score (clear the initial position's cell)
-%% Return the new board state
-move_score(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
-  set_cell(Board, RowIdx, ColIdx, [], NewBoard).
-
-
-% move_outside_board(+OutsideMoveType, +EndColor, +Board, +RowIndex, +ColumnIndex, +TurtleStack, +(Nest1-Nest2), +(Scored1-Scored2), -(NewNest1-NewNest2), -NewBoard -(NewScored1-NewScored2))
+% move_outside_board(+OutsideMoveType, +EndColor, +Board, +RowIndex, +ColumnIndex, +Turtle, +TurtleStack, +(Nest1-Nest2), +(Scored1-Scored2), -(NewNest1-NewNest2), -NewBoard -(NewScored1-NewScored2))
 %% Move the turtle off the board (but not a scoring move)
 %% Clear the initial position's cell
 %% OutsideMoveType: sides - turtles are moved to the sides of the board (outside the board) and returned to the respective nests
-move_outside_board(sides, _, Board, RowIdx, ColIdx, TurtleStack, Nest1-Nest2, _-_, NewNest1-NewNest2, _-_) :-
-  set_cell(Board, RowIdx, ColIdx, [], NewBoard),
-  add_to_lists(Nest1-Nest2, [(Color-Number)|Rest], NewNest1-NewNest2).
+move_outside_board(sides, _, Board, RowIdx, ColIdx, Turtle, TurtleStack, Nest1-Nest2, _-_, NewNest1-NewNest2, NewBoard, _-_) :-
+  cell_at(Board, InitRowIdx, InitColIdx, FullTurtleStack),
+  append(TurtleStack, StackBelow, FullTurtleStack),
+  set_cell(Board, InitRowIdx, InitColIdx, StackBelow, NewBoard),
+  add_to_lists(Nest1-Nest2, TurtleStack, NewNest1-NewNest2).
 %% OutsideMoveType: ends - turtles are moved to the ends of the board (outside the board)
 %% - Returned to the respective nests if they are of the same color as the end
 %% - Scored if they are of the opposite color
 %% EndColor: Used to determine which end of the board the turtle(s) is moved to ('white' turtles' end or 'black' turtles' end)
-move_outside_board(ends, EndColor, Board, RowIdx, ColIdx, [(Color-Number)|Rest], Nest1-Nest2, Scored1-Scored2, NewNest1-NewNest2, NewScored1-NewScored2) :-
-  set_cell(Board, RowIdx, ColIdx, [], NewBoard),
+move_outside_board(ends, EndColor, Board, RowIdx, ColIdx, Turtle, TurtleStack, Nest1-Nest2, Scored1-Scored2, SortedNest1-SortedNest2, NewBoard, SortedScored1-SortedScored2) :-
+  cell_at(Board, RowIdx, ColIdx, FullTurtleStack),
+  append(TurtleStack, StackBelow, FullTurtleStack),
+  set_cell(Board, RowIdx, ColIdx, StackBelow, NewBoard),
   split_stack_by_color(TurtleStack, EndColor, SameColorStack, DifferentColorStack),
   add_to_lists(Nest1-Nest2, SameColorStack, NewNest1-NewNest2),
-  add_to_lists(Scored1-Scored2, DifferentColorStack, NewScored1-NewScored2).
+  add_to_lists(Scored1-Scored2, DifferentColorStack, NewScored1-NewScored2),
+  sort(NewNest1, SortedNest1),
+  sort(NewNest2, SortedNest2),
+  sort(NewScored1, SortedScored1),
+  sort(NewScored2, SortedScored2).
