@@ -153,7 +153,7 @@ To represent the moves of turtles during the game, the game uses a compound term
 
 - `hatch-ColNum` - Direction can be represented as a turtle hatching and the column the turtle will be placed on the board (row is dependent on the turtle color). E.g.: Turtle-(hatch-2).
 
-- `normal_direction` - Direction can be represented as an arrow to the desired new cell location, if the turtle has been hatch before and it is placed on the board. The directions can be **up, down, left, rigth**, as described in `normal_directions/1`, in `game.pl`. This coincides in how the board is printed, since moving to the top of the board is up, moving down is reaching the bottom of the board, and so on. E.g.: Turtle-up.
+- `normal_direction` - Direction can be represented as an arrow to the desired new cell location, if the turtle has been hatch before and it is placed on the board. The directions can be **up, down, left, right**, as described in `normal_directions/1`, in `game.pl`. This coincides in how the board is printed, since moving to the top of the board is up, moving down is reaching the bottom of the board, and so on. E.g.: Turtle-up.
 
 #### move/3 predicate
 
@@ -161,11 +161,11 @@ To move a turtle, the game takes into account what type of Direction the player 
 
 **Hatch move**
 
-If it is a hatch move, the game has to know which player is currently playing (`nth1`), to know the row the turtle must be placed after hatching. 
+If it is a hatch move, the game has to know which player is currently playing (`nth1`), to know the row the turtle must be placed after hatching.
 
-Afterwards, the game will decide the effects caused by the turtle hatching on that board cell (`move_hatch`). If the cell is empty, no effects occur, and the turtle can be placed on that cell. Otherwise, if the turtle encounters another turtle or stack of turtles, then the game must decide if the player turtle will climb on top, push the other turtles, or both (push and climb). 
+Afterwards, the game will decide the effects caused by the turtle hatching on that board cell (`move_hatch`). If the cell is empty, no effects occur, and the turtle can be placed on that cell. Otherwise, if the turtle encounters another turtle or stack of turtles, then the game must decide if the player turtle will climb on top, push the other turtles, or both (push and climb).
 
-The effect of pushing turtles to a different cell will cause a chain reaction, and the game must handle the movement of the displaced turtles as well (they might also cause other turtles to be pushed). Eventually, the turtle hatching can cause other turtles to fall from the board, in particular, to make a stack of turtles enter the oponent nest, hence scoring a goal. Thus, the game must also take into account the possibility of scoring with an hatch movement. Moreover, if the stack of displaced turtles cannot climb,push or move to an empty cell, then they will be smashed and returned to their nests, awaiting to be hatched again. 
+The effect of pushing turtles to a different cell will cause a chain reaction, and the game must handle the movement of the displaced turtles as well (they might also cause other turtles to be pushed). Eventually, the turtle hatching can cause other turtles to fall from the board, in particular, to make a stack of turtles enter the opponent nest, hence scoring a goal. Thus, the game must also take into account the possibility of scoring with an hatch movement. Moreover, if the stack of displaced turtles cannot climb,push or move to an empty cell, then they will be smashed and returned to their nests, awaiting to be hatched again.
 
 After all the effects are considered, and the chain reaction is complete, then the game will complete the hatching of the player turtle, by removing it from the nest (`remove_from_nest/4`). Besides, the turn will be switched to the other player.
 
@@ -175,13 +175,13 @@ After all the effects are considered, and the chain reaction is complete, then t
 
 **Normal move**
 
-If a turtle is already placed on the board, it can only do normal moves: up, down,left, right. The process is similar to hatch move, however, the turtle player could be carrying more turtles on its back, so the game has to move the whole stack, instead of a singular turtle `find_stack_to_move/5` predicate not only obtains the whole stack, but also the current coordinates of the player turtle stack. To obtain the destination coordinatinates, we use the `dest_coords/5` predicate, **which uses Direction and the current coordinates to calculate them**. Most of the manipulation is carried by the predicate `move_normal/12`.
+If a turtle is already placed on the board, it can only do normal moves: up, down,left, right. The process is similar to hatch move, however, the turtle player could be carrying more turtles on its back, so the game has to move the whole stack, instead of a singular turtle `find_stack_to_move/5` predicate not only obtains the whole stack, but also the current coordinates of the player turtle stack. To obtain the destination coordinates, we use the `dest_coords/5` predicate, **which uses Direction and the current coordinates to calculate them**. Most of the manipulation is carried by the predicate `move_normal/12`.
 
 > Although the chosen movement belongs to the list of valid moves, most of the validations are repeated in move_normal/12.
 
-If the player turtle moves to the oponent's nest, the game must be able to handle the score, which includes adding the turtles to the score, and/or removing the oponent's turtles to their nest (Rebember stacks can be composed of white and black turtles, in any sequence).
+If the player turtle moves to the opponent's nest, the game must be able to handle the score, which includes adding the turtles to the score, and/or removing the opponent's turtles to their nest (Remember stacks can be composed of white and black turtles, in any sequence).
 
-If no scoring is possible, at the moment, the game will check if the player turtle will move to an empty cell or will encounter other turtles. If the latter, then the game will check the effect of the player turtle moving to that cell: will it push, climb, or push and climb? The chain reaction can also happen, so the game must aslo handle the same way.
+If no scoring is possible, at the moment, the game will check if the player turtle will move to an empty cell or will encounter other turtles. If the latter, then the game will check the effect of the player turtle moving to that cell: will it push, climb, or push and climb? The chain reaction can also happen, so the game must also handle it the same way.
 
 If no movement is possible (happens when displaced turtles can't push, climb turtles or move to an empty cell), then the affected turtles will be smashed and returned to their nest, which is similar to hatch move. In addition, the game must also be able to handle fallen displaced turtles, from the chain reaction.
 
