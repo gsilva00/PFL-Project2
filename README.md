@@ -20,7 +20,7 @@ Valentina Pereira Cadime, <up202206262@up.pt>
 ## Valentina Cadime (50%)
 
 - `display.pl`, `io.pl` and respective documentation
-- `valid_move` for hatch moves (`valid_hatch`), `value`
+- `valid_move` for hatch moves (`valid_hatch`), `value` (and respective auxiliary functions)
 - `README`
 
 ## Installation and Execution
@@ -215,6 +215,21 @@ All the following interactions with the game will use the number option selectio
     <img src="images/board_size.png" width="600" alt="task3"/>
     <img src="images/possible_moves.png" width="250" alt="task3"/>
 </div>
+
+### Hard Level for Computer Player
+
+To make sure the computer player decided the best moves to play in its turn, we had to make an algorithm that would decide the value of the current game state, and compare that value with the possible value outcomes(new game states) based on the possible moves the computer can make. The predicate that calculates the value of the game state is `value/3` and uses the following computation:
+
+Value = `DifferenceOfScore` + 0.5* `DifferenceOfPossibleTurtlesScoring` + 0.1* `DifferenceOfTurtlesOfEachPlayerOnBoard`
+
+The additional computations being:
+
+`DifferenceOfScore` = `NumberOfTurtlesScoredByPlayer` - `NumberOfTurtlesScoredByOtherPlayer` 
+
+`DifferenceOfPossibleTurtlesScoring` = `NumberOfTurtlesAboutToScoreFromPlayer` - `NumberOfTurtlesAboutToScoreFromOtherPlayer`
+
+
+`DifferenceOfTurtlesOfEachPlayerOnBoard` = `TotalBoardTurtlesFromPlayer` - `TotalBoardTurtlesFromOtherPlayer`
 
 ## Conclusions
 
