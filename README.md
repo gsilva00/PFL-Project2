@@ -20,7 +20,7 @@ Valentina Pereira Cadime, <up202206262@up.pt>
 ## Valentina Cadime (50%)
 
 - `display.pl`, `io.pl` and respective documentation
-- `valid_move` for hatch moves (`valid_hatch`), `value`
+- `valid_move` for hatch moves (`valid_hatch`), `value` (and respective auxiliary functions)
 - `README`
 
 ## Installation and Execution

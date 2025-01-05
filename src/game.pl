@@ -173,7 +173,7 @@ choose_move(GameState, easy, Turtle-Direction) :-
 %% Choose hard-computer player's move
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), hard, Turtle-Direction) :-
   valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
-  value(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player2Name, Number),
+  value(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player2Name-Player2Level, Number),
   nth1(Turn, [Player1Name, Player2Name], CurrPlayerName),
   %% TODO: Implement HARD AI algorithm
   !.
@@ -474,4 +474,49 @@ move_normal(true, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction
 
 % value(+GameState, +Player, -Value)
 %% TODO
-% value(GameState, Player, Value).
+
+%Value = (NumTurtlesScoredPlayer - NumTurtlesScoredOther) + 0.5*(NumTurtlesAboutScore-OtherNumTurtlesAboutScore) + 0.1*(TotalBoardTurtles - OtherTotalBoardTurtles)
+value(game_state(_, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), PlayerXName-PlayerXLevel, Value):-
+  obtain_player_number(PlayerXName,Player1Name,Player2Name,PlayerNum,OtherPlayerNum),
+  nth1(PlayerNum,[Scored1,Scored2],ScoreList),
+  length(ScoreList,NumTurtlesScoredPlayer),
+  nth1(OtherPlayerNum,[Scored1,Scored2],OtherScoreList),
+  length(OtherScoreList,NumTurtlesScoredOther),
+  DiffOfScore is NumTurtlesScoredPlayer - NumTurtlesScoredOther,
+  turtles_about_to_score(Board,PlayerNum,NumTurtlesAboutScore),
+  turtles_about_to_score(Board,OtherPlayerNum,OtherNumTurtlesAboutScore),
+  DiffTurtlesToScore is 0.5 * (NumTurtlesAboutScore - OtherNumTurtlesAboutScore),
+  get_board_turtles_of(Board,PlayerNum,TotalBoardTurtles),
+  get_board_turtles_of(Board,OtherPlayerNum,OtherTotalBoardTurtles),
+  DiffTurtlesBoard is 0.1 * (TotalBoardTurtles - OtherTotalBoardTurtles),
+  Value is DiffOfScore + DiffTurtlesToScore + DiffTurtlesBoard.
+
+
+
+obtain_player_number(Player1Name,Player1Name,Player2Name,1,2).
+obtain_player_number(Player2Name,Player1Name,Player2Name,2,1).
+
+turtles_about_to_score(Board,PlayerNum,NumTurtlesAboutScore):-
+  board_sizes(Board,_,Length),
+  nth1(PlayerNum, [1,Length], RowIdx),
+  nth1(RowIdx, Board, Row),
+  append(Row,FlatRow),
+  check_turtle_count(FlatRow,PlayerNum, [],NumTurtlesAboutScore).
+
+
+  
+check_turtle_count([],_,Acc,Final):-
+  length(Acc,Final),!.
+check_turtle_count([white-Num|Tail], 1, Acc, Final):-
+  check_turtle_count(Tail, 1, [white-Num|Acc], Final),!.
+check_turtle_count([(white-Num)|Tail], 2, Acc, Final):-
+  check_turtle_count(Tail, 2, Acc, Final),!.
+check_turtle_count([(black-Num)|Tail], 2, Acc, Final):-
+  check_turtle_count(Tail, 2, [black-Num|Acc], Final),!.
+check_turtle_count([(black-Num)|Tail], 1, Acc, Final):-
+  check_turtle_count(Tail, 1, Acc, Final),!.
+
+
+get_board_turtles_of(Board,PlayerNum,TotalBoardTurtles):-
+  turtles_on_board(Board,TurtlesOnBoard),
+  check_turtle_count(TurtlesOnBoard,PlayerNum, [],TotalBoardTurtles).
