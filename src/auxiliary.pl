@@ -261,34 +261,66 @@ stack_can_climb_push(Turtle, [TopTurtle|Rest], CheckedStack, _) :-
 %%% 2.3. Moving Turtles (Scoring, To Empty, Climb, Push, Climb and Push)
 
 % move_score(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
-%% Move the turtle off the opponent's side of the board to score
+%% Move the turtle off the opponent's side of the board to score (clear the initial position's cell)
 %% Return the new board state
 move_score(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
   set_cell(Board, RowIdx, ColIdx, [], NewBoard).
 
+% move_empty(+Board, +InitialRowIndex, +InitialColumnIndex, +DestinationRowIndex, +DestinationColumnIndex, +TurtleStack, -NewBoard)
+%% Move the turtle to an empty cell with coordinates (RowIdx, ColIdx)
+%% Clear the initial position's cell
+%% Return the new board state
+move_empty(Board, InitRowIdx, InitColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard) :-
+  set_cell(Board, InitRowIdx, InitColIdx, [], TempBoard),
+  set_cell(TempBoard, DestRowIdx, DestColIdx, TurtleStack, NewBoard).
 % move_empty(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
 %% Move the turtle to an empty cell with coordinates (RowIdx, ColIdx)
+%% Without clearing the initial position's cell (for hatch moves and 2nd part of normal moves)
 %% Return the new board state
 move_empty(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
   set_cell(Board, RowIdx, ColIdx, TurtleStack, NewBoard).
 
+% move_climb(+Board, +InitialRowIndex, +InitialColumnIndex, +DestinationRowIndex, +DestinationColumnIndex, +TurtleStack, -NewBoard)
+%% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be climbed
+%% Clear the initial position's cell
+%% Return the new board state
+move_climb(Board, InitRowIdx, InitColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard) :-
+  set_cell(Board, InitRowIdx, InitColIdx, [], TempBoard),
+  move_climb(TempBoard, DestRowIdx, DestColIdx, TurtleStack, NewBoard).
 % move_climb(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
 %% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be climbed
+%% Without clearing the initial position's cell (for hatch moves and 2nd part of normal moves)
 %% Return the new board state
 move_climb(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
   cell_at(Board, RowIdx, ColIdx, DestStack),
   push_stack(TurtleStack, DestStack, NewStack),
   set_cell(Board, RowIdx, ColIdx, NewStack, NewBoard).
 
+% move_push(+Board, +InitialRowIndex, +InitialColumnIndex, +DestinationRowIndex, +DestinationColumnIndex, +TurtleStack, -NewBoard, -DisplacedTurtleStack)
+%% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be pushed
+%% Clear the initial position's cell
+%% Return the new board state and the stack of turtles that were displaced
+move_push(Board, InitRowIdx, InitColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack) :-
+  set_cell(Board, InitRowIdx, InitColIdx, [], TempBoard),
+  move_push(TempBoard, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack).
 % move_push(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard, -DisplacedTurtleStack)
 %% Move the turtle to a cell with coordinates (RowIdx, ColIdx) with a stack that can be pushed
+%% Without clearing the initial position's cell (for hatch moves and 2nd part of normal moves)
 %% Return the new board state and the stack of turtles that were displaced
 move_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack) :-
   cell_at(Board, RowIdx, ColIdx, DisplacedTurtleStack),
   set_cell(Board, RowIdx, ColIdx, TurtleStack, NewBoard).
 
+% move_climb_push(+Board, +InitialRowIndex, +InitialColumnIndex, +DestinationRowIndex, +DestinationColumnIndex, +TurtleStack, -NewBoard, -DisplacedTurtleStack)
+%% Move the TurtleStack to a cell with coordinates (RowIdx, ColIdx) with a stack which has at least 1 element that can be climbed and pushed
+%% Clear the initial position's cell
+%% Return the new board state and the stack of turtles that were displaced
+move_climb_push(Board, InitRowIdx, InitColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack) :-
+  set_cell(Board, InitRowIdx, InitColIdx, [], TempBoard),
+  move_climb_push(TempBoard, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack).
 % move_climb_push(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
 %% Move the TurtleStack to a cell with coordinates (RowIdx, ColIdx) with a stack which has at least 1 element that can be climbed and pushed
+%% Without clearing the initial position's cell (for hatch moves and 2nd part of normal moves)
 %% Return the new board state
 move_climb_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack) :-
   cell_at(Board, RowIdx, ColIdx, DestStack),
