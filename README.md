@@ -36,79 +36,79 @@ After loading the correct files and download `SICStus Prolog 4.9`, open SICSTus 
 
 ## Description of the game
 
-`turtles, a game of turtles colliding in three dimensions` is a competitive two-player game, where the players have to face eachother to win the game.
+`turtles, a game of turtles colliding in three dimensions` is a competitive two-player game, where the players have to face each other to win the game.
 
-**Goal:** Get 3 of your turtles in the oponent's nest.
+**Goal:** Get 3 of your turtles in the opponent's nest.
 
-### How to start the game:
-The menu of the game will include all the gameplay options available at the moment:  Human vs. Human `(H/H)`, Human vs. Computer `(H/PC)`, Computer vs. Human `(PC/H)`, Computer vs. Computer `(PC/PC)`. Choose a number between 1-4 to play the respective gamemode, otherwise write 5 to `exit` the game.
+### How to start the game
 
-If you choose to have humam players, the game will ask for their `names`. If you have PC bots, the game will ask for the game `difficulty`. If you have two human players, then the game will ask `who shall start` the game (player 1 or 2).
+The menu of the game will include all the gameplay options available at the moment: Human vs. Human `(H/H)`, Human vs. Computer `(H/PC)`, Computer vs. Human `(PC/H)`, Computer vs. Computer `(PC/PC)`. Choose a number between 1-4 to play the respective gamemode, otherwise write 5 to `exit` the game.
 
-Besides, it will ask which `size of the board` the game will be played. Any gamemode will have the options of `2, 3, 4, 5 and 6` for the board width and `4, 5, 6, 7 and 8` for the board length. The original board game is 2 columns by 4 rowns.
+If you choose to have human players, the game will ask for their `names`. If you have PC bots, the game will ask for the game `difficulty`. If you have two human players, then the game will ask `who shall start` the game (player 1 or 2).
+
+Besides, it will ask which `size of the board` the game will be played. Any gamemode will have the options of `2, 3, 4, 5 and 6` for the board width and `4, 5, 6, 7 and 8` for the board length. The original board game is 2 columns by 4 rows.
 
 After the configuration of the game, the game will start.
 
 ### Understand the board and turtles
 
-A turtle is represented by a letter, `W` or `B`, and a number. The number represents the weight, size and power of the turtle and it is between 1 to 5. The number will be useful while deciding which turtle is best to move. 
+A turtle is represented by a letter, `W` or `B`, and a number. The number represents the weight, size and power of the turtle and it is between 1 to 5. The number will be useful while deciding which turtle is best to move.
 
 Each player has 5 turtles that they can move on the board. Firstly, each player will have all of their turtles placed inside their nest (outside the board, facing lengthwise). The white turtles, represented by W, will belong to the first player and will start from the first row ( their nest will be below the board). Consequently, the black turtles, represented by B, will belong to the second player and will start on top row of the board (the nest will be above the board).
 
-**How to win:** 
+**How to win:**
 
 To win the game, the players must hatch their turtles and move them to the other side of the board, to the point they reach the enemy nest. Three turtles are needed to pass to the enemy's nest to win the game. During the game, the players will take turns and decide which move one of their turtles needs to make. The first one to complete the goal will win the game.
-
 
 ### Turtle Movements
 
 - `Hatch` - If there is at least one turtle inside the nest, the player can hatch the turtle. This will make the turtle leave the nest, and be place on the respective edge of the border. The player can choose which turtle to hatch and in which column the turtle will be placed.
 
-- `Normal move` - If any turtle is inside the board, the player can move it in any possible direction: up, down, left, rigth. The turtle must not leave the board by its own move, unless it is to move to the enemy's nest, scoring a point.
+- `Normal move` - If any turtle is inside the board, the player can move it in any possible direction: up, down, left, right. The turtle must not leave the board by its own move, unless it is to move to the enemy's nest, scoring a point.
 
-- `Fall` - When a turtle leaves the board because of an enemy turtle, we can say the turtle fell off the board. Any fallen turtle will be placed again in the nest, awaitting to be hatched again.
+- `Fall` - When a turtle leaves the board because of an enemy turtle, we can say the turtle fell off the board. Any fallen turtle will be placed again in the nest, awaiting to be hatched again.
 
-- `Encounter` - When a turtle is placed or moves inside the board, the turtle can encounters a non-empty cell. In other words, the cell where the player wants to move a turtle, migth have already a turtle or a group of turtles stacked on top of eachother. The interaction that follows the turtles encounter can be varied.
+- `Encounter` - When a turtle is placed or moves inside the board, the turtle can encounters a non-empty cell. In other words, the cell where the player wants to move a turtle, might have already a turtle or a group of turtles stacked on top of each other. The interaction that follows the turtles encounter can be varied.
 
-- `Stack` - If the player turtle has a lower number than the turtle that was already there, then it can jump on the turtles back, forming a stack. The player turtle will be on the top of the stack. However, the turtle on the bottom is the one that controls the moves of the stack. So beware which turtle will be your taxi driver: it could be your oponent's turtle or your own. Other turtles can also stack on top of you of they have an even lower number.
+- `Stack` - If the player turtle has a lower number than the turtle that was already there, then it can jump on the turtles back, forming a stack. The player turtle will be on the top of the stack. However, the turtle on the bottom is the one that controls the moves of the stack. So beware which turtle will be your taxi driver: it could be your opponent's turtle or your own. Other turtles can also stack on top of you of they have an even lower number.
 
 - `Normal move being the turtle driver of the stack` - If the player turtle is on the bottom of the stack, it can move to any cell direction, bringing with it the rest of the stacked turtles. In the other hand, if the combined weight of the turtles above the player turtle is equal or greater than the player turtle weight, then the turtle cannot move - It's stuck! Until one of the top turtles leaves the stack, the player can't move the stack of turtle.
 
-- `Push` - If the player turtle wants to move to a cell, but the cell is occupied by turtle or a turtle stack, the player turtle can move to that position and push the other turtles to another cell in the same-direction of the movement. This can only happen, if the player turtle has an equal or greater number than the combined stack of turtles currently there. This can even happen, if the turtle just hatched and wants that place. Nevertheless, if, for example, the player turtle is carrying a stack of turtles, their combined weigth doesn't matter to the push - only the driver turtle number is consider to push turtles. Ultimately, the player turtle can push turtles over any sides of the board, hence making them fall off the board. The pushing can also create a sequence of pushes, like the butterfly effect.
+- `Push` - If the player turtle wants to move to a cell, but the cell is occupied by turtle or a turtle stack, the player turtle can move to that position and push the other turtles to another cell in the same-direction of the movement. This can only happen, if the player turtle has an equal or greater number than the combined stack of turtles currently there. This can even happen, if the turtle just hatched and wants that place. Nevertheless, if, for example, the player turtle is carrying a stack of turtles, their combined weight doesn't matter to the push - only the driver turtle number is consider to push turtles. Ultimately, the player turtle can push turtles over any sides of the board, hence making them fall off the board. The pushing can also create a sequence of pushes, like the butterfly effect.
 
 - `Climb and push` - If a player turtle carries a stack, and encounters another turtle stack, the player turtle stack can push some of the other turtles to climb on top of the remaining. This only happens, if the player turtle has an equal or greater number than some of the encountered stacked turtles, but not from all of them. In other words, if the turtle player sees a turtle in the middle of the stack that is greater number than them, the player turtle can push the other turtles off the stack, so that the player turtle stack can thrive on top of that one's back. Of course, the player turtle must be strong enough to push the combined weak turtles that wants to get rid off (as normal push).
 
-- `Smash` - If another turtle obligues the player turtle to move in one direction, but the player turtle cannot be pushed or stacked, then the player turtle gets smashed :(. The turtle will leave the board and go back to its nest to be hatched again. It the player turtle had other turtles on top, those will also be smashed and redirected to the respective nest.
+- `Smash` - If the player turtle makes another turtle move in one direction, but that turtle cannot be pushed or stacked, then the player turtle gets smashed :(. The turtle will leave the board and go back to its nest to be hatched again. It the player turtle had other turtles on top, those will also be smashed and redirected to the respective nest.
 
 ### Important Notes
 
-- The movement caused by a turtle can't make the board look the same as its turn before. For example if turtle A pushes turtle B, turtle B cannot push turtle A, since we would be back to the same game stage. Basically, it is 'illegal' to undo the oponent's last move.
+- The movement caused by a turtle can't make the board look the same as its turn before. For example if turtle A pushes turtle B, turtle B cannot push turtle A, since we would be back to the same game stage. Basically, it is 'illegal' to undo the opponent's last move.
 
 - If a player has no available movements, then they loose and the game is over.
 
-- If the player turtles happen to stay 3 times in the same position, the game ends in a draw. In other words, if the game movementss repeats on itself, to the point the players are in cyclic positions, then there's no point in the continue the game. Nobody likes to watch a chess piece move only back and forth - it is not fun.
+- If the player turtles happen to stay 3 times in the same position, the game ends in a draw. In other words, if the game movements repeats on itself, to the point the players are in cyclic positions, then there's no point in the continue the game. Nobody likes to watch a chess piece move only back and forth - it is not fun.
 
 ### More information
 
-For more imformation, visit the [official website](https://turtlesgame.xyz/), which also includes an instruction video of the game.
+For more information, visit the [official website](https://turtlesgame.xyz/), which also includes an instructive video of the game.
 
 ## Considerations for game extensions
 
-Compared to the original game, we have expanded the rules so they could fit more size boards. In particular, the player can choose which width and length they would like to play the game. The available widths are 2, 3, 4, 5 and 6 cells, and the optional lengths are 4, 5, 6, 7 and 8. The width and lenght are indepent from each other, thus, the player has even more freedom of choice.
+Compared to the original game, we have expanded the rules so they could fit more size boards. In particular, the player can choose which width and length they would like to play the game. The available widths are 2, 3, 4, 5 and 6 cells, and the optional lengths are 4, 5, 6, 7 and 8. The width and length are independent from each other, thus, the player has even more freedom of choice.
 
-Currently, there are neither additional rules for expert players, nor simplified rules for novice players. 
+Currently, there are neither additional rules for expert players, nor simplified rules for novice players.
 
 ## Game Logic
 
 Since we are creating a game in a purely logic programming language, we have to change the way we normally implement a game. Therefore, the main design decisions regarding the implementation of the game logic were dependent on the following topics.
 
-### Functionality Organization Among Game Files 
+### Functionality Organization Among Game Files
 
 To ease the management of all the clauses created for the game, we divided the clauses in different files grouped by their functionality.
 
 - `io.pl` - holds all the rules needed to obtain the **input** of the user: number or string. More information about input validation in **User Interaction** topic.
 
-- `display.pl` - holds all the rules necessary to write or display the game menu, board, prompts, state of the game, and others. It serves as an **output** to the Sicstus console.
+- `display.pl` - holds all the rules necessary to write or display the game menu, board, prompts, state of the game, and others. It serves as an **output** to the SICStus console.
 
 - `auxiliary.pl` - holds auxiliary rules and compound terms for the other files. It contains **Stack Logic, Game Logic** for Turtle Manipulation, and **Board Logic** for Board Manipulation.
 
@@ -116,17 +116,17 @@ To ease the management of all the clauses created for the game, we divided the c
 
 ### Game Configuration Representation
 
-The game configuration is represented by a compound term named game_config. It holds, 5 variables, namely: **Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, FirstPlayerChoice**.  
+The game configuration is represented by a compound term named game_config. It holds, 5 variables, namely: **Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, FirstPlayerChoice**.
 
-- The Width and Length are used to initialize the gamming board inside `initial_state`, using `init_board`. 
+- The Width and Length are used to initialize the game board inside `initial_state`, using `init_board`.
 
 - The last variable, FirstPlayerChoice, is used to store the player who will play the first turn of the game, which is decided by the user by input.
 
 > If gamemode is H/H, then the user must choose which player plays first. Otherwise, if only one human player plays, then it automatically has the first turn. In PC/PC, first PC plays the first turn.
 
-- The remaining 2 variables are tuples that represent the 2 players. Each tuple has 2 elements: the player name, selectable if its a human player, and the player level, which represents the type of player and it can be `human, easy (Computer Bot) or hard (Computer Bot)`. Besides this, we use the name of the players to print the start of the game inside `initial_state`.
+- The remaining 2 variables are tuples that represent the 2 players. Each tuple has 2 elements: the player name, selectable if its a human player, and the player level, which represents the type of player and it can be `human, easy (Computer Bot) or hard (Computer Bot)`. Besides this, we use the name of the players to print the start of the game inside `initial_state`.
 
-**The content of game_config will be passed directly or inderectly to game_state by the initial_state predicate.**
+**The content of game_config will be passed directly or indirectly to game_state by the initial_state predicate.**
 
 ### Internal Game State Representation
 
@@ -136,11 +136,11 @@ The internal game state is represent by a compound term named game_state, and in
 
 - `Nest1-Nest2` is a tuple with 2 elements, each representing the nests of the players. Initially, it is set as a tuple of lists filled with the 5 turtles: `[white-1,white-2,white-3,white-4,white-5]-[black-1,black-2,black-3,black-4,black-5]`(the colors represent the turtles owned by each player; the number represents the power, size or weight of the turtle). While playing the game, the players will have the chance to hatch the turtles and use them to win the game. The action of hatching a turtle represents removing the turtle from the nest, hence placing it in the edge of the board. During the game, there is a possibility the nests will be empty, `[ ]-[ ]`, and, thus, the player must use the turtles on the board to win.
 
-- `Board` is the current board of the game state. It is a list of lists (Rows) of lists(Cells). Each cell may be empty, `[]` or contain at most 5 turtles, as if they were stack on top of each other5, for example: `[white-5,white-4,black-3,black-2,black-1]`. The width and length of the board depends on the input given by the player while configuring the game (see **Considerations for game extensions** for more in-depth). For instance, if the original size is chosen, 2 columns * 4 rows, then the board will be set as `[ [[],[]], [[],[]], [[],[]], [[],[]] ]`.
+- `Board` is the current board of the game state. It is a list of lists (Rows) of lists(Cells). Each cell may be empty, `[]` or contain at most 5 turtles, as if they were stack on top of each other5, for example: `[white-5,white-4,black-3,black-2,black-1]`. The width and length of the board depends on the input given by the player while configuring the game (see **Considerations for game extensions** for more in-depth). For instance, if the original size is chosen, 2 columns \* 4 rows, then the board will be set as `[ [[],[]], [[],[]], [[],[]], [[],[]] ]`.
 
-> Note: the insertion of the turtles won't follow the same indexes as the coordinates printed. If turtle A is placed on cell (1,1) then the board will be `[ [[],[]], [[],[]], [[],[]], [[turtle A],[]] ]`. In other words, the insertion in the rows will be inverted, but the column insertion is normal (basically, it is flipped vertically). This looks unnatural at first. However, the printing of the board must have the lowest cell (1,1) in the bottom-left corner, which concides with the order of the board.
+> Note: the insertion of the turtles won't follow the same indexes as the coordinates printed. If turtle A is placed on cell (1,1) then the board will be `[ [[],[]], [[],[]], [[],[]], [[turtle A],[]] ]`. In other words, the insertion in the rows will be inverted, but the column insertion is normal (basically, it is flipped vertically). This looks unnatural at first. However, the printing of the board must have the lowest cell (1,1) in the bottom-left corner, which coincides with the order of the board.
 
-- `Scored1-Scored2` is a tupple of 2 lists representing the turtles who reached the enemy's nest, hence scoring a point to the turtles' player. To win the game, the player must have 3 turtles inside their score list. The tuple is set, at first, as `[ ]-[ ]`, and will be filled with turtles during the game. E.g.: `[white-1,white-4]-[black-2,black-3,black-1]`.
+- `Scored1-Scored2` is a tuple of 2 lists representing the turtles who reached the enemy's nest, hence scoring a point to the turtles' player. To win the game, the player must have 3 turtles inside their score list. The tuple is set, at first, as `[ ]-[ ]`, and will be filled with turtles during the game. E.g.: `[white-1,white-4]-[black-2,black-3,black-1]`.
 
 - `Player1Name-Player1Level` and `Player2Name-Player2Level` are the same as set in game_config.
 
@@ -152,7 +152,7 @@ The internal game state is represent by a compound term named game_state, and in
 
 ### User Interaction
 
-The game is compososed of an initial menu which includes all the gameplay options available at the moment:  Human vs. Human (H/H), Human vs. Computer (H/PC), Computer vs. Human (PC/H), Computer vs. Computer (PC/PC). 
+The game is composed of an initial menu which includes all the gameplay options available at the moment: Human vs. Human (H/H), Human vs. Computer (H/PC), Computer vs. Human (PC/H), Computer vs. Computer (PC/PC).
 
 <p align="center">
     <img src="images/initial_menu.png" width="300" alt="task3"/>
@@ -162,7 +162,7 @@ A prompt will appear whenever the user has to make a decision. In this case, to 
 
 > To verify if an input number is valid, the game reads all the ASCII codes inserted on that line (`read_line`) and checks if each code belongs to a number character (from 48 to 57 in ASCII, or from 0 to 9 in decimal). If true, converts the ASCII code to decimal and adds it to the rest of the previously converted input. After obtained the number the user inserted in the correct format, the game will decide if it is between the interval of the current prompt (`between` from the library).
 
-After choosen any gamemode, the game will ask for the names of the human players. The game will capture each username as a string.
+After chosen any gamemode, the game will ask for the names of the human players. The game will capture each username as a string.
 
 <p align="center">
     <img src="images/name_players.png" width="400" alt="task3"/>
