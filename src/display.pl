@@ -236,11 +236,10 @@ display_moves_aux([Turtle-Direction|Rest], Length, Index) :-
 
 decide_movement(Color-_,TurtleCode,hatch-ColNum, Length):-
   get_hatch_row(Color, Length, RowNum),
-  format('Hatch turtle ~w to (~w,~w)~n', [TurtleCode, ColNum, RowNum ]), !.
+  format('Hatch turtle ~w to (~w,~w)~n', [TurtleCode, ColNum, RowNum]), !.
 
-decide_movement(TurtleCode, DirNum, _):-
-  normal_direction(DirNum,Arrow),
-  format('Move turtle ~w ~w~n', [TurtleCode, Arrow ]).
+decide_movement(Color-_, TurtleCode, Direction, _):-
+  format('Move turtle ~w ~w (1 square)~n', [TurtleCode, Direction]).
 
 get_hatch_row(white, _,1).
 get_hatch_row(black, Length, Length).

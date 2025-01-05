@@ -420,21 +420,21 @@ move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direct
 move_normal(_, Turn, _-_, Board, _-_, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, _-_, _-_) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_empty(Board, DestRowIdx, DestColIdx),
-  normal_move_empty(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard),
+  move_empty(Board, DestRowIdx, DestColIdx, TurtleStack, NewBoard),
   !.
 %% Move TurtleStack to the normal cell (occupied cell - climb top of stack)
 %% OR Move DisplacedTurtleStack because it is able to climb the top of next turtle stack - continue chain reaction
 move_normal(_, Turn, _-_, Board, _-_, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, _-_, _-_) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_can_climb(Board, DestRowIdx, DestColIdx, TurtleStack),
-  normal_move_climb(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard),
+  move_climb(Board, DestRowIdx, DestColIdx, TurtleStack, NewBoard),
   !.
 %% Move TurtleStack to the normal cell (occupied cell - push stack)
 %% OR Move DisplacedTurtleStack because it is able to push the next turtle stack - continue chain reaction
 move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_can_push(Board, DestRowIdx, DestColIdx, TurtleStack),
-  normal_move_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
+  move_push(Board, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
   !,
   dest_coords(DestRowIdx, DestColIdx, Direction, NewRowIdx, NewColIdx), % Get chain reaction destination coords (chain reaction goes in the same direction)
   move_normal(true, Turn, Nest1-Nest2, Board, Scored1-Scored2, NewRowIdx, NewColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).
@@ -443,7 +443,7 @@ move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direct
 move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_can_climb_push(Board, DestRowIdx, DestColIdx, TurtleStack),
-  normal_move_climb_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
+  move_climb_push(Board, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
   !,
   dest_coords(DestRowIdx, DestColIdx, Direction, NewRowIdx, NewColIdx), % Get chain reaction destination coords
   move_normal(true, Turn, Nest1-Nest2, Board, Scored1-Scored2, NewRowIdx, NewColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).

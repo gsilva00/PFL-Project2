@@ -28,11 +28,11 @@ Valentina Pereira Cadime, <up202206262@up.pt>
 
 ### Linux
 
-After the installation of SICStus Prolog 4.9, open the terminal and go to the directory of the SICStus installation. Run the following command: `./sicstus`. Download the necessary files of the game, and make sure they are all together in the same directory. In the same terminal, run `load_files('<absolute path to game.pl>').`. In the end, run `play.` to start the game.
+Install `SICStus Prolog 4.9.0`. After downloading the necessary game files, and making sure they are all in the same directory, open the Linux terminal and go to the directory of the SICStus installation. Run the following command: `./sicstus`. Then, run `load_files('<absolute path to game.pl>').`. Finally, run `play.` to start the game.
 
 ### Windows
 
-After loading the correct files and download `SICStus Prolog 4.9`, open SICSTus app and consult the `game.pl` file. Then, proceed to write `play.` in the console and press `Enter`. The game will be displayed shortly after.
+Install `SICStus Prolog 4.9.0`. After downloading the necessary game files, and making sure they are all in the same directory, run the SICStus app and consult the `game.pl` file. Then, proceed to run `play.` to start the game.
 
 ## Description of the game
 
@@ -50,7 +50,7 @@ Besides, it will ask which `size of the board` the game will be played. Any game
 
 After the configuration of the game, the game will start.
 
-### Understand the board and turtles
+### Understanding the board and turtles
 
 A turtle is represented by a letter, `W` or `B`, and a number. The number represents the weight, size and power of the turtle and it is between 1 to 5. The number will be useful while deciding which turtle is best to move.
 
