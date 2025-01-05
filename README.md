@@ -216,6 +216,21 @@ All the following interactions with the game will use the number option selectio
     <img src="images/possible_moves.png" width="250" alt="task3"/>
 </div>
 
+### Hard Level for Computer Player
+
+To make sure the computer player decided the best moves to play in its turn, we had to make an algorithm that would decide the value of the current game state, and compare that value with the possible value outcomes(new game states) based on the possible moves the computer can make. The predicate that calculates the value of the game state is `value/3` and uses the following computation:
+
+Value = `DifferenceOfScore` + 0.5* `DifferenceOfPossibleTurtlesScoring` + 0.1* `DifferenceOfTurtlesOfEachPlayerOnBoard`
+
+The additional computations being:
+
+`DifferenceOfScore` = `NumberOfTurtlesScoredByPlayer` - `NumberOfTurtlesScoredByOtherPlayer` 
+
+`DifferenceOfPossibleTurtlesScoring` = `NumberOfTurtlesAboutToScoreFromPlayer` - `NumberOfTurtlesAboutToScoreFromOtherPlayer`
+
+
+`DifferenceOfTurtlesOfEachPlayerOnBoard` = `TotalBoardTurtlesFromPlayer` - `TotalBoardTurtlesFromOtherPlayer`
+
 ## Conclusions
 
 After lots of work, we can conclude that the game present includes playing limitations compared to the original game. For example, we didn't had enough time to limit the game state to stop if the same game state has been happening in a cycle. We also didn't had time to complete the task of impedding the undo movement of the opponent. We belive there are several hidden bugs lying on the code, and we know improvements are possible, in particular, in the move/3 predicate and board display. We could also do an improved hard bot, to challenge more the experienced players. Anyway, with the limit time to complete the project, we did our best to fulfill all the requirements and organize and optimize the game as most as possible with tail recursion.

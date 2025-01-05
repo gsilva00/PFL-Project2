@@ -473,50 +473,56 @@ move_normal(true, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction
 
 
 % value(+GameState, +Player, -Value)
-%% TODO
-
-%Value = (NumTurtlesScoredPlayer - NumTurtlesScoredOther) + 0.5*(NumTurtlesAboutScore-OtherNumTurtlesAboutScore) + 0.1*(TotalBoardTurtles - OtherTotalBoardTurtles)
+%% Obtains the Value of the current GameState based on the Player
+%% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
+%% Player is a compoud term - PlayerName-PlayerLevel
+%% Value is a float number - Value = (NumTurtlesScoredPlayer - NumTurtlesScoredOther) + 0.5*(NumTurtlesAboutScore-OtherNumTurtlesAboutScore) + 0.1*(TotalBoardTurtles - OtherTotalBoardTurtles)
 value(game_state(_, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), PlayerXName-PlayerXLevel, Value):-
-  obtain_player_number(PlayerXName,Player1Name,Player2Name,PlayerNum,OtherPlayerNum),
-  nth1(PlayerNum,[Scored1,Scored2],ScoreList),
-  length(ScoreList,NumTurtlesScoredPlayer),
-  nth1(OtherPlayerNum,[Scored1,Scored2],OtherScoreList),
-  length(OtherScoreList,NumTurtlesScoredOther),
+  obtain_player_number(PlayerXName, Player1Name, Player2Name, PlayerNum, OtherPlayerNum),
+  nth1(PlayerNum, [Scored1, Scored2], ScoreList),
+  length(ScoreList, NumTurtlesScoredPlayer),
+  nth1(OtherPlayerNum, [Scored1, Scored2], OtherScoreList),
+  length(OtherScoreList, NumTurtlesScoredOther),
   DiffOfScore is NumTurtlesScoredPlayer - NumTurtlesScoredOther,
-  turtles_about_to_score(Board,PlayerNum,NumTurtlesAboutScore),
-  turtles_about_to_score(Board,OtherPlayerNum,OtherNumTurtlesAboutScore),
+  turtles_about_to_score(Board, PlayerNum, NumTurtlesAboutScore),
+  turtles_about_to_score(Board, OtherPlayerNum, OtherNumTurtlesAboutScore),
   DiffTurtlesToScore is 0.5 * (NumTurtlesAboutScore - OtherNumTurtlesAboutScore),
-  get_board_turtles_of(Board,PlayerNum,TotalBoardTurtles),
-  get_board_turtles_of(Board,OtherPlayerNum,OtherTotalBoardTurtles),
+  get_board_turtles_of(Board, PlayerNum, TotalBoardTurtles),
+  get_board_turtles_of(Board, OtherPlayerNum, OtherTotalBoardTurtles),
   DiffTurtlesBoard is 0.1 * (TotalBoardTurtles - OtherTotalBoardTurtles),
   Value is DiffOfScore + DiffTurtlesToScore + DiffTurtlesBoard.
 
 
+% obtain_player_number(+PlayerName, +FirstPlayerName, +SecondPlayerName, -NumberOfPlayer, -NumberOfOtherPlayer)
+%% Gets the corresponding player number (1 or 2) and its oponent's number 
+obtain_player_number(Player1Name, Player1Name, Player2Name, 1, 2).
+obtain_player_number(Player2Name, Player1Name, Player2Name, 2, 1).
 
-obtain_player_number(Player1Name,Player1Name,Player2Name,1,2).
-obtain_player_number(Player2Name,Player1Name,Player2Name,2,1).
-
-turtles_about_to_score(Board,PlayerNum,NumTurtlesAboutScore):-
-  board_sizes(Board,_,Length),
-  nth1(PlayerNum, [1,Length], RowIdx),
+% turtles_about_to_score(+Board, +NumberOfPlayer, -NumTurtlesAboutScore)
+%% Returns the total number of the player's turtles that are on the oponent's border.
+turtles_about_to_score(Board, PlayerNum, NumTurtlesAboutScore):-
+  length(Board, BoardLen),
+  nth1(PlayerNum, [1, BoardLen], RowIdx),
   nth1(RowIdx, Board, Row),
-  append(Row,FlatRow),
-  check_turtle_count(FlatRow,PlayerNum, [],NumTurtlesAboutScore).
+  append(Row, FlatRow),
+  count_turtles(FlatRow, PlayerNum, [], NumTurtlesAboutScore).
 
 
-  
-check_turtle_count([],_,Acc,Final):-
+% count_turtles(+ListOfTurtles, +NumberOfPlayer, +Acc, -TotalOfTurtles)
+%% Counts the number of the player's turtles that are on the list 
+count_turtles([],_,Acc,Final):-
   length(Acc,Final),!.
-check_turtle_count([white-Num|Tail], 1, Acc, Final):-
-  check_turtle_count(Tail, 1, [white-Num|Acc], Final),!.
-check_turtle_count([(white-Num)|Tail], 2, Acc, Final):-
-  check_turtle_count(Tail, 2, Acc, Final),!.
-check_turtle_count([(black-Num)|Tail], 2, Acc, Final):-
-  check_turtle_count(Tail, 2, [black-Num|Acc], Final),!.
-check_turtle_count([(black-Num)|Tail], 1, Acc, Final):-
-  check_turtle_count(Tail, 1, Acc, Final),!.
+count_turtles([(white-_)|Tail], 1, Acc, Final):-
+  count_turtles(Tail, 1, [white|Acc], Final),!.
+count_turtles([(white-_)|Tail], 2, Acc, Final):-
+  count_turtles(Tail, 2, Acc, Final),!.
+count_turtles([(black-_)|Tail], 2, Acc, Final):-
+  count_turtles(Tail, 2, [black|Acc], Final),!.
+count_turtles([(black-_)|Tail], 1, Acc, Final):-
+  count_turtles(Tail, 1, Acc, Final),!.
 
-
-get_board_turtles_of(Board,PlayerNum,TotalBoardTurtles):-
-  turtles_on_board(Board,TurtlesOnBoard),
-  check_turtle_count(TurtlesOnBoard,PlayerNum, [],TotalBoardTurtles).
+% get_board_turtles_of(+Board, +NumberOfPlayer, -TotalBoardTurtlesBelongingToPlayer)
+%% Obtain the total amount of turtles on the board that belong to the player
+get_board_turtles_of(Board, PlayerNum, TotalBoardTurtles):-
+  turtles_on_board(Board, TurtlesOnBoard),
+  count_turtles(TurtlesOnBoard, PlayerNum, [], TotalBoardTurtles).
