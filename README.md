@@ -218,7 +218,7 @@ All the following interactions with the game will use the number option selectio
 
 ## Conclusions
 
-After lots of work, we can conclude that the game present includes playing limitations compared to the original game. For example, we didn't had enough time to limit the game state to stop if the same game state has been happening in a cycle. We also didn't had time to complete the task of impedding the undo movement of the opponent. We belive there are several hidden bugs lying on the code, and we know improvements are possible, in particular, in the move/3 predicate and board display. We could also do an improved hard bot, to challenge more the experienced players. Anyway, with the limit time to complete the project, we did our best to fulfill all the requirements and organize and optimize the game as most as possible with tail recursion.
+After lots of work, we can conclude that the game present includes playing limitations compared to the original game. For example, we didn't had enough time to limit the game state to stop if the same game state has been happening in a cycle. We also didn't had time to complete the task of impeding the undo movement of the opponent. We believe there are several hidden bugs lying on the code, and we know improvements are possible, in particular, in the move/3 predicate and board display. We could also do an improved hard bot, to challenge more the experienced players. Anyway, with the limit time to complete the project, we did our best to fulfill all the requirements and organize and optimize the game as most as possible with tail recursion.
 
 ## Bibliography
 

@@ -55,7 +55,9 @@ display_board_length_menu :-
 % display_winner(+Winner)
 %% Display the winner of the game
 display_winner(Winner) :-
-  format('Congratulations, ~w! You won!~n', [Winner]).
+  write_ln('================================'),
+  format('Congratulations, ~w! You won!!~n', [Winner]).
+  write_ln('================================').
 
 
 % display_game(+GameState)
