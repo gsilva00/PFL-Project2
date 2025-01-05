@@ -5,15 +5,15 @@
 % INTEGER INPUT
 
 % get_menu_choice(+ChoiceText, +Min, +Max, -Input)
-%% Prompts the user to choose an option between the Min and Max values
-%% Repeats until a valid option is chosen (see read_until_between/3)
-%% Clears the input buffer after reading the option (to avoid reading the newline)
+%% Prompt the user to choose an option between the Min and Max values
+%% Repeat until a valid option is chosen (see read_until_between/3)
+%% Clear the input buffer after reading the option (to avoid reading the newline)
 get_menu_choice(ChoiceText, Min, Max, Input) :-
   format('~a (between ~d and ~d): ', [ChoiceText, Min, Max]),
   read_until_between(Min, Max, Input).
 
 % read_until_between(+Min, +Max, -Value)
-%% Reads a number until it is between Min and Max
+%% Read a number until it is between Min and Max
 read_until_between(Min, Max, Input) :-
   repeat,
   read_number(Input),
@@ -21,18 +21,19 @@ read_until_between(Min, Max, Input) :-
   !. % Not read another number after a valid one
 
 % read_number(-X)
-%% Reads the first digits of a number. Throws the rest of the input away.
-%% The 2nd argument is used to avoid returning 0 when no digit is read/something unexpected is read
+%% Read a number from the input
 read_number(X) :-
   read_number_aux(0,false,X).
 
 % read_number_aux(+Acc,+HasAtLeastOneDigit,-X)
+%% Auxiliary predicate to read_number/1
 read_number_aux(Acc, _, X) :-
   read_line(Codes),        % Read line as a list of ASCII codes
   process_codes(Codes, Acc, X).
 
 % process_codes(+Codes, +Acc, -X)
-%% Processes the list of ASCII codes to extract the number
+%% Auxiliary predicate to read_number_aux/3
+%% Process the list of ASCII codes to extract the number
 process_codes([C|Rest], Acc, X) :-
   between(48, 57, C), % Check if each code is between 0 and 9
   !,
@@ -45,18 +46,19 @@ process_codes(_, Acc, Acc). % Stop processing when a non-digit is encountered or
 % STRING INPUT
 
 % get_string(+ChoiceText, -Input)
-%% Prompts the user to input a string
+%% Prompt the user to input a string
 get_string(ChoiceText, Input) :-
   format('~a: ', [ChoiceText]),
   read_string(Input),
-  clear_buffer.
+  clear_input.
 
 % read_string(-Str)
-%% Reads a string from the input
+%% Read a string from the input
 read_string(Str) :-
   read_string_aux([], false, Str).
 
 % read_string_aux(+Acc,+HasAtLeastOneChar,-Str)
+%% Auxiliary predicate to read_string/1
 read_string_aux(Acc, _, Str) :-
   peek_char(C),
   C \= '\n',
@@ -84,22 +86,23 @@ get_string_ln(ChoiceText, Input) :-
   nl.
 
 % write_ln(+X)
-%% Writes X to the console followed by a newline (avoiding the need to write '\n' all the time - boilerplate)
-%% As it exists in other Prolog implementations, but not in SICStus
+%% Write X to the console followed by a newline (avoiding the need to write '\n' all the time - boilerplate)
+%% Exists in other Prolog implementations, but not in SICStus
 write_ln(X) :-
   write(X),
   nl.
 
-% clear_buffer/0
-%% Clears the input buffer
-clear_buffer :-
+% clear_input/0
+%% Clear the input buffer
+clear_input :-
   repeat,
   get_char(C),
   C = '\n',
   !. % to avoid the true = ? on Sicstus 4.8.0+, works without the ! on older versions
 
 % clear/0
-%% Clears the console where the game is being played
-%% (for terminals that support ANSI escape codes)
+%% Clear the console where the game is being played
+%% For terminals that support ANSI escape codes
 clear :-
-  write('\33\[2J').
+  write('\e[H\e[2J'),
+  flush_output.
