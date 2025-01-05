@@ -253,7 +253,7 @@ highest_val_moves_aux([NewValue-_|Rest], Value, Acc, HighestValMoves) :-
   NewValue < Value,
   !,
   highest_val_moves_aux(Rest, Value, Acc, HighestValMoves).
-highest_val_moves_aux([NewValue-NewMove|Rest], _, _Acc, HighestValMoves) :-
+highest_val_moves_aux([NewValue-NewMove|Rest], Value, _Acc, HighestValMoves) :-
   NewValue > Value,
   highest_val_moves_aux(Rest, NewValue, [NewMove], HighestValMoves),
   !.
