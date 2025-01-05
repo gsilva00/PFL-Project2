@@ -521,32 +521,3 @@ value(game_state(_, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Leve
 %% Gets the corresponding player number (1 or 2) and its oponent's number 
 obtain_player_number(Player1Name, Player1Name, Player2Name, 1, 2).
 obtain_player_number(Player2Name, Player1Name, Player2Name, 2, 1).
-
-% turtles_about_to_score(+Board, +NumberOfPlayer, -NumTurtlesAboutScore)
-%% Returns the total number of the player's turtles that are on the oponent's border.
-turtles_about_to_score(Board, PlayerNum, NumTurtlesAboutScore):-
-  length(Board, BoardLen),
-  nth1(PlayerNum, [1, BoardLen], RowIdx),
-  nth1(RowIdx, Board, Row),
-  append(Row, FlatRow),
-  count_turtles(FlatRow, PlayerNum, [], NumTurtlesAboutScore).
-
-
-% count_turtles(+ListOfTurtles, +NumberOfPlayer, +Acc, -TotalOfTurtles)
-%% Counts the number of the player's turtles that are on the list 
-count_turtles([],_,Acc,Final):-
-  length(Acc,Final),!.
-count_turtles([(white-_)|Tail], 1, Acc, Final):-
-  count_turtles(Tail, 1, [white|Acc], Final),!.
-count_turtles([(white-_)|Tail], 2, Acc, Final):-
-  count_turtles(Tail, 2, Acc, Final),!.
-count_turtles([(black-_)|Tail], 2, Acc, Final):-
-  count_turtles(Tail, 2, [black|Acc], Final),!.
-count_turtles([(black-_)|Tail], 1, Acc, Final):-
-  count_turtles(Tail, 1, Acc, Final),!.
-
-% get_board_turtles_of(+Board, +NumberOfPlayer, -TotalBoardTurtlesBelongingToPlayer)
-%% Obtain the total amount of turtles on the board that belong to the player
-get_board_turtles_of(Board, PlayerNum, TotalBoardTurtles):-
-  turtles_on_board(Board, TurtlesOnBoard),
-  count_turtles(TurtlesOnBoard, PlayerNum, [], TotalBoardTurtles).

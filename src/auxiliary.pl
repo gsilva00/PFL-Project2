@@ -199,6 +199,40 @@ max(X, Y, X) :-
 max(_, Y, Y).
 
 
+% turtles_about_to_score(+Board, +NumberOfPlayer, -NumTurtlesAboutScore)
+%% Returns the total number of the player's turtles that are on the oponent's border.
+turtles_about_to_score(Board, PlayerNum, NumTurtlesAboutScore):-
+  length(Board, BoardLen),
+  nth1(PlayerNum, [1, BoardLen], RowIdx),
+  nth1(RowIdx, Board, Row),
+  append(Row, FlatRow),
+  count_turtles(FlatRow, PlayerNum, [], NumTurtlesAboutScore).
+
+
+% count_turtles(+ListOfTurtles, +NumberOfPlayer, +Acc, -TotalOfTurtles)
+%% Counts the number of the player's turtles that are on the list
+count_turtles([],_,Acc,Final):-
+  length(Acc,Final),!.
+count_turtles([(white-_)|Tail], 1, Acc, Final):-
+  count_turtles(Tail, 1, [white|Acc], Final),
+  !.
+count_turtles([(white-_)|Tail], 2, Acc, Final):-
+  count_turtles(Tail, 2, Acc, Final),
+  !.
+count_turtles([(black-_)|Tail], 2, Acc, Final):-
+  count_turtles(Tail, 2, [black|Acc], Final),
+  !.
+count_turtles([(black-_)|Tail], 1, Acc, Final):-
+  count_turtles(Tail, 1, Acc, Final),
+  !.
+
+% get_board_turtles_of(+Board, +NumberOfPlayer, -TotalBoardTurtlesBelongingToPlayer)
+%% Obtain the total amount of turtles on the board that belong to the player
+get_board_turtles_of(Board, PlayerNum, TotalBoardTurtles):-
+  turtles_on_board(Board, TurtlesOnBoard),
+  count_turtles(TurtlesOnBoard, PlayerNum, [], TotalBoardTurtles).
+
+
 % select_random_best(+MovesWithValues, -BestMove)
 %% Selects a random move among those with the highest value
 select_random_best([Value-Move|Rest], BestMove) :-
