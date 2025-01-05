@@ -14,15 +14,14 @@ Valentina Pereira Cadime, <up202206262@up.pt>
 
 ## Guilherme Silva (50%)
 
-- tudo
--
--
+- `game.pl`, `auxiliary.pl` and respective documentation
+- `move`
 
 ## Valentina Cadime (50%)
 
-- 0, nao fez nada, mesmo burra a sério
--
--
+- `display.pl`, `io.pl` and respective documentation
+- `valid_move` for hatch moves (`valid_hatch`), `value`
+- `README`
 
 ## Installation and Execution
 
@@ -82,7 +81,7 @@ To win the game, the players must hatch their turtles and move them to the other
 
 ### Important Notes
 
-- The movement caused by a turtle can't make the board look the same as its turn before. For example if turtle A pushes turtle B, turtle B cannot push turtle A, since we would be back to the same game stage. Basically, it is 'illegal' to undo the opponent's last move.
+- The movement caused by a turtle can't make the board look the same as its turn before. For example if turtle A pushes turtle B, turtle B cannot push turtle A, since the game would be back to the same game stage. Basically, it is 'illegal' to undo the opponent's last move.
 
 - If a player has no available movements, then they loose and the game is over.
 
@@ -124,7 +123,7 @@ The game configuration is represented by a compound term named game_config. It h
 
 > If gamemode is H/H, then the user must choose which player plays first. Otherwise, if only one human player plays, then it automatically has the first turn. In PC/PC, first PC plays the first turn.
 
-- The remaining 2 variables are tuples that represent the 2 players. Each tuple has 2 elements: the player name, selectable if its a human player, and the player level, which represents the type of player and it can be `human, easy (Computer Bot) or hard (Computer Bot)`. Besides this, we use the name of the players to print the start of the game inside `initial_state`.
+- The remaining 2 variables are tuples that represent the 2 players. Each tuple has 2 elements: the player name, selectable if its a human player, and the player level, which represents the type of player and it can be `human, easy (Computer Bot) or hard (Computer Bot)`. Besides this, the game uses the name of the players to print the start of the game inside `initial_state`.
 
 **The content of game_config will be passed directly or indirectly to game_state by the initial_state predicate.**
 
@@ -148,7 +147,47 @@ The internal game state is represent by a compound term named game_state, and in
 
 ### Move Representation
 
-> describe the information required to represent a move, and how it is represented internally (e.g., the coordinates of a board location, and/or other information necessary to represent a move) and how it is used by the move/3 predicate.
+To represent the moves of turtles during the game, the game uses a compound term to represent the turtle that will move and the direction it will take: `Turtle-Direction`. The direction of the move can be decomposed in 2 unique terms:
+
+> More on the Turtle representation in **Understanding the board and turtles**
+
+- `hatch-ColNum` - Direction can be represented as a turtle hatching and the column the turtle will be placed on the board (row is dependent on the turtle color). E.g.: Turtle-(hatch-2).
+
+- `normal_direction` - Direction can be represented as an arrow to the desired new cell location, if the turtle has been hatch before and it is placed on the board. The directions can be **up, down, left, rigth**, as described in `normal_directions/1`, in `game.pl`. This coincides in how the board is printed, since moving to the top of the board is up, moving down is reaching the bottom of the board, and so on. E.g.: Turtle-up.
+
+#### move/3 predicate
+
+To move a turtle, the game takes into account what type of Direction the player has decided for that turtle.
+
+**Hatch move**
+
+If it is a hatch move, the game has to know which player is currently playing (`nth1`), to know the row the turtle must be placed after hatching. 
+
+Afterwards, the game will decide the effects caused by the turtle hatching on that board cell (`move_hatch`). If the cell is empty, no effects occur, and the turtle can be placed on that cell. Otherwise, if the turtle encounters another turtle or stack of turtles, then the game must decide if the player turtle will climb on top, push the other turtles, or both (push and climb). 
+
+The effect of pushing turtles to a different cell will cause a chain reaction, and the game must handle the movement of the displaced turtles as well (they might also cause other turtles to be pushed). Eventually, the turtle hatching can cause other turtles to fall from the board, in particular, to make a stack of turtles enter the oponent nest, hence scoring a goal. Thus, the game must also take into account the possibility of scoring with an hatch movement. Moreover, if the stack of displaced turtles cannot climb,push or move to an empty cell, then they will be smashed and returned to their nests, awaiting to be hatched again. 
+
+After all the effects are considered, and the chain reaction is complete, then the game will complete the hatching of the player turtle, by removing it from the nest (`remove_from_nest/4`). Besides, the turn will be switched to the other player.
+
+> Several predicates are used to manipulate the move. See full documentation on **game.pl** and **auxiliary.pl**.
+
+> Direction is mostly used for move/3 to obtain the Column Number the player turtle will hatch.
+
+**Normal move**
+
+If a turtle is already placed on the board, it can only do normal moves: up, down,left, right. The process is similar to hatch move, however, the turtle player could be carrying more turtles on its back, so the game has to move the whole stack, instead of a singular turtle `find_stack_to_move/5` predicate not only obtains the whole stack, but also the current coordinates of the player turtle stack. To obtain the destination coordinatinates, we use the `dest_coords/5` predicate, **which uses Direction and the current coordinates to calculate them**. Most of the manipulation is carried by the predicate `move_normal/12`.
+
+> Although the chosen movement belongs to the list of valid moves, most of the validations are repeated in move_normal/12.
+
+If the player turtle moves to the oponent's nest, the game must be able to handle the score, which includes adding the turtles to the score, and/or removing the oponent's turtles to their nest (Rebember stacks can be composed of white and black turtles, in any sequence).
+
+If no scoring is possible, at the moment, the game will check if the player turtle will move to an empty cell or will encounter other turtles. If the latter, then the game will check the effect of the player turtle moving to that cell: will it push, climb, or push and climb? The chain reaction can also happen, so the game must aslo handle the same way.
+
+If no movement is possible (happens when displaced turtles can't push, climb turtles or move to an empty cell), then the affected turtles will be smashed and returned to their nest, which is similar to hatch move. In addition, the game must also be able to handle fallen displaced turtles, from the chain reaction.
+
+Finally, same as what happens while hatching a turtle, the game switches the player that will play next.
+
+> Several predicates are used to manipulate the move. See full documentation on **game.pl** and **auxiliary.pl**.
 
 ### User Interaction
 
@@ -168,7 +207,7 @@ After chosen any gamemode, the game will ask for the names of the human players.
     <img src="images/name_players.png" width="400" alt="task3"/>
 </p>
 
-> To obtain the input string, the game will `peek` each character and verify if it is a newline, `\n`. If the user hasn't written at least one character other than `\n`, the game will try again to read the string. If in any moment the user inputs a character different than `\n`, and, then presses Enter, the game will automatically understand that's the total string. Thus, it will capture the string (without the \n), `reverse` it (the original string will be stored in reverse due to efficient head insertion), and store it as an atom (`atom_chars`). Finally, we clear any input char that wasn't used for the atom (`clear_buffer`).
+> To obtain the input string, the game will `peek` each character and verify if it is a newline, `\n`. If the user hasn't written at least one character other than `\n`, the game will try again to read the string. If in any moment the user inputs a character different than `\n`, and, then presses Enter, the game will automatically understand that's the total string. Thus, it will capture the string (without the \n), `reverse` it (the original string will be stored in reverse due to efficient head insertion), and store it as an atom (`atom_chars`). Finally, the game clears any input char that wasn't used for the atom (`clear_buffer`).
 
 All the following interactions with the game will use the number option selection. For example, to choose the size of the board, or to decide which move to play next.
 
@@ -179,7 +218,7 @@ All the following interactions with the game will use the number option selectio
 
 ## Conclusions
 
-> Conclusions about the work carried out, including limitations of the program (and known issues), as well as possible improvements (future developments roadmap).
+After lots of work, we can conclude that the game present includes playing limitations compared to the original game. For example, we didn't had enough time to limit the game state to stop if the same game state has been happening in a cycle. We also didn't had time to complete the task of impedding the undo movement of the opponent. We belive there are several hidden bugs lying on the code, and we know improvements are possible, in particular, in the move/3 predicate and board display. We could also do an improved hard bot, to challenge more the experienced players. Anyway, with the limit time to complete the project, we did our best to fulfill all the requirements and organize and optimize the game as most as possible with tail recursion.
 
 ## Bibliography
 
