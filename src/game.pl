@@ -5,7 +5,7 @@
 :- use_module(library(random)).
 
 
-config(Width, Length, Player1Level, Player2Level).
+game_config(Width, Length, Player1Level, Player2Level).
 game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
 % Turtles
 %% Represented as pair Color-Number
@@ -25,7 +25,7 @@ play :-
   choose_players_names(Gamemode, Player1Name, Player2Name),
   choose_first_player(Gamemode, Player1Name, Player2Name, Choice),
   choose_board_size(Width, Length),
-  initial_state(config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, Choice), game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)),
+  initial_state(game_config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, Choice), game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)),
   game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)).
 
 
@@ -117,7 +117,7 @@ choose_board_size(Width, Length) :-
 % GAME LOGIC
 
 % initial_state(+GameConfig, -GameState)
-initial_state(config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, Choice), game_state(Choice, [white-1,white-2,white-3,white-4,white-5]-[black-1,black-2,black-3,black-4,black-5], Board, []-[], Player1Name-Player1Level, Player2Name-Player2Level)):-
+initial_state(game_config(Width, Length, Player1Name-Player1Level, Player2Name-Player2Level, Choice), game_state(Choice, [white-1,white-2,white-3,white-4,white-5]-[black-1,black-2,black-3,black-4,black-5], Board, []-[], Player1Name-Player1Level, Player2Name-Player2Level)):-
   init_board(Width, Length, Board),
   format('Game started with ~w vs. ~w!~n', [Player1Name, Player2Name]).
 

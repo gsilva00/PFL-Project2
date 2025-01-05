@@ -63,6 +63,11 @@ read_string_aux(Acc, _, Str) :-
   !,
   get_char(_),
   read_string_aux([C|Acc], true, Str).
+
+read_string_aux(Acc, false, Str) :-   %it only enters here if the user only writes a newline
+  get_char(_),                        %consume useless newline
+  read_string_aux(Acc, false, Str).   %try obtain the string again
+
 read_string_aux(Acc, true, Str) :-
   reverse(Acc, Reversed),     % Char list built in reverse due to efficient head insertion
   atom_chars(Str, Reversed). % Convert char list to atom (as it is only used for printing)
