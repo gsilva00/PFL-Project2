@@ -69,9 +69,9 @@ choose_players_names(cc, 'Computer 1', 'Computer 2').
 choose_first_player(hh, Player1Name, Player2Name, Choice) :-
   display_first_player_menu(Player1Name, Player2Name),
   get_menu_choice_ln('Option', 1, 2, Choice).
-choose_first_player(hc, Player1Name, 'Computer', Player1Name).
-choose_first_player(ch, 'Computer', Player2Name, Player2Name).
-choose_first_player(cc, 'Computer 1', 'Computer 2', 'Computer 1').
+choose_first_player(hc, Player1Name, 'Computer', 1).
+choose_first_player(ch, 'Computer', Player2Name, 1).
+choose_first_player(cc, 'Computer 1', 'Computer 2', 1).
 
 
 %% choose_difficulty(+Gamemode, -Player1Level, -Player2Level)
@@ -132,7 +132,7 @@ initial_state(game_config(Width, Length, Player1Name-Player1Level, Player2Name-P
 game_loop(GameState) :-
   game_over(GameState, WinnerName),
   !,
-  display_winner(WinnerName).
+  display_result(WinnerName).
 game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
   display_game(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)),
   nth1(Turn, [Player1Level, Player2Level], CurrPlayerLevel),
@@ -145,6 +145,27 @@ game_loop(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Play
 % game_over(+GameState, -Winner)
 %% Check if the game is over
 %% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
+%% When there are no valid moves for the current player, and the number of scored turtles is equal, the game ends in a draw
+%% When there are no valid moves for the current player, the player who has scored more turtles wins
+game_over(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), 'Draw') :-
+  valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), []),
+  length(Scored1, Length1),
+  length(Scored2, Length1),
+  !.
+game_over(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player1Name) :-
+  valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), []),
+  length(Scored1, Length1),
+  length(Scored2, Length2),
+  Length1 > Length2,
+  !.
+game_over(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player2Name) :-
+  valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), []),
+  length(Scored1, Length1),
+  length(Scored2, Length2),
+  Length1 < Length2,
+  !.
+
+%% When a player has 3 turtles in the scored area, he wins
 game_over(game_state(_, _-_, _, Scored1-Scored2, Player1Name-_, _-_), Player1Name) :-
   length(Scored1, Length),
   Length >= 3,

@@ -191,6 +191,13 @@ dir_displacement(right, 0, 1).
 opposite_color(white, black).
 opposite_color(black, white).
 
+%% max(+X, +Y, -Max)
+%% Get the maximum of two numbers
+max(X, Y, X) :-
+  X >= Y,
+  !.
+max(_, Y, Y).
+
 
 % add_to_lists(+(List1-List2), +TurtleStack, -(NewList1-NewList2))
 %% Given the state's lists, adds each turtle in the stack to the respective list
