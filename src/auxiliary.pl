@@ -79,6 +79,12 @@ board_sizes(Board, Width, Length) :-
   nth1(1, Board, Row),
   length(Row, Width).
 
+% max_cell_size(+Board, -MaxSize)
+%% Get the maximum size of all the cells on the board
+max_cell_size(Board, MaxSize) :-
+  findall(Size, (member(Row, Board), member(Cell, Row), length(Cell, Size)), Sizes),
+  max_member(MaxSize, Sizes).
+
 % cell_at(+Board, +RowIndex, +ColumnIndex, ?Content)
 %% Return the content at the specified cell or check if the cell is empty (depending of the presence of Content)
 %% In the case of our game, the Content is a stack of turtles
@@ -99,12 +105,6 @@ set_cell(Board, RowIdx, ColIdx, Content, NewBoard) :-
 %% Check if the cell is an empty stack
 cell_empty(Board, RowIdx, ColIdx) :-
   cell_at(Board, RowIdx, ColIdx, []). % Empty stack is represented by an empty list
-
-% max_cell_size(+Board, -MaxSize)
-% Get the maximum size of all the cells on the board
-max_cell_size(Board, MaxSize) :-
-  findall(Size, (member(Row, Board), member(Cell, Row), length(Cell, Size)), Sizes),
-  max_member(MaxSize, Sizes).
 
 
 % valid_coords(+Board, +RowIndex, +ColumnIndex, +TurtleColor)
@@ -197,6 +197,32 @@ max(X, Y, X) :-
   X >= Y,
   !.
 max(_, Y, Y).
+
+
+% select_random_best(+MovesWithValues, -BestMove)
+%% Selects a random move among those with the highest value
+select_random_best([Value-Move|Rest], BestMove) :-
+  highest_val_moves([Value-Move|Rest], BestMoves),
+  random_member(BestMove, BestMoves).
+
+% highest_val_moves(+MovesWithValues, -HighestValMoves)
+%% Selects all moves with the highest value
+highest_val_moves([Value-Move|Rest], HighestValMoves) :-
+  highest_val_moves(Rest, Value, [Move], HighestValMoves).
+% highest_val_moves_aux(+MovesWithValues, +Value, +Acc, -HighestValMoves)
+%% Auxiliary predicate for highest_val_moves/2
+highest_val_moves_aux([], _, Acc, Acc).
+highest_val_moves_aux([Value-Move|Rest], Value, Acc, HighestValMoves) :-
+  !,
+  highest_val_moves_aux(Rest, Value, [Move|Acc], HighestValMoves).
+highest_val_moves_aux([NewValue-_|Rest], Value, Acc, HighestValMoves) :-
+  NewValue < Value,
+  !,
+  highest_val_moves_aux(Rest, Value, Acc, HighestValMoves).
+highest_val_moves_aux([NewValue-NewMove|Rest], _, _Acc, HighestValMoves) :-
+  NewValue > Value,
+  highest_val_moves_aux(Rest, NewValue, [NewMove], HighestValMoves),
+  !.
 
 
 % add_to_lists(+(List1-List2), +TurtleStack, -(NewList1-NewList2))

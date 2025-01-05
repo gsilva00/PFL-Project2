@@ -194,9 +194,14 @@ choose_move(GameState, easy, Turtle-Direction) :-
 %% Choose hard-computer player's move
 choose_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), hard, Turtle-Direction) :-
   valid_moves(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), ListOfMoves),
-  value(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Player2Name, Number),
-  nth1(Turn, [Player1Name, Player2Name], CurrPlayerName),
-  %% TODO: Implement HARD AI algorithm
+  nth1(Turn, [Player1Name-Player1Level, Player2Name-Player2Level], Player),
+  setof(Value-Mv, NewState^(
+    member(Mv, ListOfMoves),
+    move(GameState, Mv, NewState),
+    value(NewState, Player, Value)
+  ), MovesValues),
+  reverse(MovesValues, RevMovesValues),
+  select_random_best(RevMovesValues, Turtle-Direction),
   !.
 
 
