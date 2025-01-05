@@ -129,7 +129,8 @@ valid_y(Board, RowIdx, white) :-
 %% Black turtles score when they reach below the bottom row (RowIdx Length+1) - white turtles' side
 valid_y(Board, RowIdx, black) :-
   board_sizes(Board, _, Length),
-  between(1, Length+1, RowIdx).
+  BelowLength is Length+1,
+  between(1, BelowLength, RowIdx).
 
 
 
@@ -153,6 +154,14 @@ find_turtle(Board, Turtle, RowIdx, ColIdx) :-
   between(1, Length, RowIdx),
   between(1, Width, ColIdx),
   turtle_in_cell(Board, RowIdx, ColIdx, Turtle).
+
+% turtle_in_board(+Board, +Turtle)
+%% Check if the turtle is in any of the stacks on the board
+turtle_in_board(Board, Turtle) :-
+  member(Row, Board),
+  member(Stack, Row),
+  member(Turtle, Stack),
+  !.
 
 % turtle_in_cell(+Board, +Turtle, +RowIndex, +ColumnIndex)
 %% Check if the turtle is in the specified cell
@@ -251,10 +260,10 @@ stack_can_climb_push(Turtle, [TopTurtle|Rest], CheckedStack, _) :-
 
 %%% 2.3. Moving Turtles (Scoring, To Empty, Climb, Push, Climb and Push)
 
-% normal_move_score(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
+% move_score(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)
 %% Move the turtle off the opponent's side of the board to score
 %% Return the new board state
-normal_move_score(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
+move_score(Board, RowIdx, ColIdx, TurtleStack, NewBoard) :-
   set_cell(Board, RowIdx, ColIdx, [], NewBoard).
 
 % move_empty(+Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard)

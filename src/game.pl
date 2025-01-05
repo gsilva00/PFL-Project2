@@ -196,13 +196,15 @@ valid_move(game_state(Turn, Nest1-Nest2, Board, _-_, _-_, _-_), Turtle-Direction
   valid_hatch(Turn, Board, Turtle-Direction).
 %% Valid normal moves (for turtles on the board - not in the nests or scored)
 %% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
-valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, _-_, _-_), Turtle-Direction) :-
+valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, _-_, _-_), (Color-Number)-Direction) :-
   nth1(Turn, [Nest1, Nest2], CurrNest),
   nth1(Turn, [Scored1, Scored2], CurrScored),
-  \+member(Turtle, CurrNest),
-  \+member(Turtle, CurrScored),
+  nth1(Turn, [white, black], Color), % Get the color of the current player, to check if the turtle on the board is his
+  turtle_in_board(Board, (Color-Number)),
+  \+member((Color-Number), CurrNest),
+  \+member((Color-Number), CurrScored),
   move_directions(normal, _, Direction),
-  valid_normal(Board, Turtle-Direction).
+  valid_normal(Board, (Color-Number)-Direction).
 
 
 % valid_hatch(+Turn, +Board, +Move)
@@ -238,8 +240,8 @@ valid_hatch(Turn, Board, Turtle-(hatch-ColIdx)) :-
 % valid_normal(+Board, +Move)
 %% Check if it is a scoring move
 valid_normal(Board, (Color-Number)-Direction) :-
-  find_stack_to_move(Board, Color-Number, RowIdx, ColIdx, TurtleStack),
-  stack_can_move(Board, RowIdx, ColIdx, (Color-Number), TurtleStack),
+  find_stack_to_move(Board, (Color-Number), RowIdx, ColIdx, TurtleStack),
+  stack_can_move(Board, RowIdx, ColIdx, TurtleStack),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   valid_coords(Board, DestRowIdx, DestColIdx, Color),
   cell_can_score(Board, DestRowIdx, DestColIdx, Color),
@@ -247,16 +249,16 @@ valid_normal(Board, (Color-Number)-Direction) :-
 %% Check if the normal cell is empty
 %% - Turtle can move to the destination coords (empty cell)
 valid_normal(Board, (Color-Number)-Direction) :-
-  find_stack_to_move(Board, Color-Number, RowIdx, ColIdx, TurtleStack),
-  stack_can_move(Board, RowIdx, ColIdx, (Color-Number), TurtleStack),
+  find_stack_to_move(Board, (Color-Number), RowIdx, ColIdx, TurtleStack),
+  stack_can_move(Board, RowIdx, ColIdx, TurtleStack),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   valid_coords(Board, DestRowIdx, DestColIdx, Color),
   cell_empty(Board, DestRowIdx, DestColIdx),
   !.
 %% Check if the normal cell has turtle(s) and is climbable
 %% - Turtle can move to the destination coords, is lighter than the top of the stack in that cell and IS ABLE to climb on top of it
-valid_normal(Board, Turtle-Direction) :-
-  find_stack_to_move(Board, Turtle, RowIdx, ColIdx, TurtleStack),
+valid_normal(Board, (Color-Number)-Direction) :-
+  find_stack_to_move(Board, (Color-Number), RowIdx, ColIdx, TurtleStack),
   stack_can_move(Board, RowIdx, ColIdx, TurtleStack),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   valid_coords(Board, DestRowIdx, DestColIdx, Color),
@@ -264,8 +266,8 @@ valid_normal(Board, Turtle-Direction) :-
   !.
 %% Check if the normal cell has turtle(s) and is pushable
 %% - Turtle can move to the destination coords, is stronger than the stack in that cell and IS ABLE to push it
-valid_normal(Board, Turtle-Direction) :-
-  find_stack_to_move(Board, Turtle, RowIdx, ColIdx, TurtleStack),
+valid_normal(Board, (Color-Number)-Direction) :-
+  find_stack_to_move(Board, (Color-Number), RowIdx, ColIdx, TurtleStack),
   stack_can_move(Board, RowIdx, ColIdx, TurtleStack),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   valid_coords(Board, DestRowIdx, DestColIdx, Color),
@@ -273,8 +275,8 @@ valid_normal(Board, Turtle-Direction) :-
   !.
 %% Check if the normal cell has turtle(s) and is climbable and pushable
 %% - Turtle can move to the destination coords, is lighter than some turtle in the stack in that cell and IS ABLE to climb on top of it, pushing what's above that turtle off the stack
-valid_normal(Board, Turtle-Direction) :-
-  find_stack_to_move(Board, Turtle, RowIdx, ColIdx, TurtleStack),
+valid_normal(Board, (Color-Number)-Direction) :-
+  find_stack_to_move(Board, (Color-Number), RowIdx, ColIdx, TurtleStack),
   stack_can_move(Board, RowIdx, ColIdx, TurtleStack),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   valid_coords(Board, DestRowIdx, DestColIdx, Color),
@@ -306,58 +308,74 @@ normal_directions(right).
 %% Make a hatching move
 %% GameState and NewGameState are represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
 move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-(hatch-ColIdx), game_state(Turn1, NewNest1-NewNest2, NewBoard, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
-  valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-(hatch-ColIdx)),
+  % Move is already validated because it was chosen from the list of valid moves. Still, most of the validations are repeated in move_hatch/11
+  % valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-(hatch-ColIdx)),
   board_sizes(Board, Width, Length),
   nth1(Turn, [Length, 1], RowIdx),
-  move_hatch(false, Nest1-Nest2, Board, RowIdx, ColIdx, [Turtle], NewBoard, NewNest1-NewNest2),
+  move_hatch(false, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, [Turtle], NewBoard, NewNest1-NewNest2, NewScored1-NewScored2),
   remove_from_nest(Turn, Nest1-Nest2, Turtle, NewNest1-NewNest2),
   Turn1 is Turn rem 2 + 1, % Change turn
   !.
 %% Make a normal move
 move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction, game_state(Turn1, NewNest1-NewNest2, NewBoard, NewScored1-NewScored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
-  valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction),
+  % Move is already validated because it was chosen from the list of valid moves. Still, most of the validations are repeated in move_normal/12
+  % valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-Direction),
   find_stack_to_move(Board, Turtle, RowIdx, ColIdx, TurtleStack),
   move_normal(false, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2),
   Turn1 is Turn rem 2 + 1,
   !.
 
 
-% move_hatch(+IsChainReaction, +(Nest1-Nest2), +Board, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard, -(NewNest1-NewNest2))
+% move_hatch(+IsChainReaction, +Turn, +Nest1-Nest2, +Board, +Scored1-Scored2, +RowIndex, +ColumnIndex, +TurtleStack, -NewBoard, -NewNest1-NewNest2, -NewScored1-NewScored2)
 %% Handle chain reactions from pushing turtles
 %% No more turtles to push (no more chain reactions from pushing)
-move_hatch(true, _-_, _, _, _, [], _, _-_).
+move_hatch(true, _, _-_, _, _-_, _, _, [], _, _-_, _-_).
+%% Handle chain reactions from pushing turtles
+%% Move DisplacedTurtleStack because it is able to move the opposite end of the board (scoring move) - return turtles to the respective nests/scored and stop chain reaction
+move_hatch(true, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+  last(TurtleStack, (Color-_)), % Get the color of the base turtle in the stack
+  dest_coords(RowIdx, ColIdx, up, DestRowIdx, DestColIdx),
+  cell_can_score(Board, DestRowIdx, DestColIdx, Color),
+  move_score(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, NewNest1-NewNest2),
+  allowed_outside_board(ends, Color, TurtleStack, Scored1-Scored2, Nest1-Nest2, NewNest1-NewNest2, NewScored1-NewScored2),
+  !.
+
 %% Move the turtle to the hatching cell (empty cell)
 %% OR Move DisplacedTurtleStack because it is able to move to the empty cell - continue chain reaction
 %% For chain reaction handling see move_hatch(true, ...) predicates
-move_hatch(_, _-_, Board, RowIdx, ColIdx, TurtleStack, NewBoard, _-_) :-
+move_hatch(_, Turn, _-_, Board, _-_, RowIdx, ColIdx, TurtleStack, NewBoard, _-_ , _-_) :-
   cell_empty(Board, RowIdx, ColIdx),
   move_empty(Board, RowIdx, ColIdx, TurtleStack, NewBoard),
   !.
 %% Move the turtle to the hatching cell (occupied cell - climb top of stack)
 %% OR Move DisplacedTurtleStack because it is able to climb the top of the next turtle stack - continue chain reaction
-move_hatch(_, _-_, Board, RowIdx, ColIdx, TurtleStack, NewBoard, _-_) :-
+move_hatch(_, Turn, _-_, Board, _-_, RowIdx, ColIdx, TurtleStack, NewBoard, _-_ , _-_) :-
   cell_can_climb(Board, RowIdx, ColIdx, TurtleStack),
   move_climb(Board, RowIdx, ColIdx, TurtleStack, NewBoard),
   !.
 %% Move the turtle to the hatching cell (occupied cell - push stack)
 %% OR Move DisplacedTurtleStack because it is able to push next turtle stack - continue chain reaction
-move_hatch(_, Nest1-Nest2, Board, RowIdx, ColIdx, TurtleStack, NewBoard, NewNest1-NewNest2) :-
+move_hatch(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   cell_can_push(Board, RowIdx, ColIdx, TurtleStack),
   move_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
   !,
-  NewRowIdx is RowIdx + 1,
-  move_hatch(true, Nest1-Nest2, Board, NewRowIdx, ColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2).
+  NewRowIdx1 is RowIdx - 1,
+  NewRowIdx2 is RowIdx + 1,
+  nth1(Turn, [NewRowIdx1, NewRowIdx2], NewRowIdx),
+  move_hatch(true, Turn, Nest1-Nest2, NewBoard, Scored1-Scored2, NewRowIdx, ColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).
 %% Move the turtle to the hatching cell (occupied cell - climb and push stack)
 %% OR Move DisplacedTurtleStack because it is able to climb and push one of the turtles in the next turtle stack - continue chain reaction
-move_hatch(_, _-_, Board, RowIdx, ColIdx, TurtleStack, NewBoard, _-_) :-
+move_hatch(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   cell_can_climb_push(Board, RowIdx, ColIdx, TurtleStack),
   move_climb_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
   !,
-  NewRowIdx is RowIdx + 1,
-  move_hatch(true, Nest1-Nest2, Board, NewRowIdx, ColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2).
+  NewRowIdx1 is RowIdx - 1, % Go up
+  NewRowIdx2 is RowIdx + 1, % Go down
+  nth1(Turn, [NewRowIdx1, NewRowIdx2], NewRowIdx),
+  move_hatch(true, Turn, Nest1-Nest2, NewBoard, Scored1-Scored2, NewRowIdx, ColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).
 %% Handle chain reactions from pushing turtles
 %% DisplacedTurtleStack is not able to climb, push, or climb and push the next turtle - return turtles to the nests and stop chain reaction
-move_hatch(true, Nest1-Nest2, Board, RowIdx, ColIdx, TurtleStack, NewBoard, NewNest1-NewNest2) :-
+move_hatch(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, TurtleStack, Board, NewNest1-NewNest2, _-_) :-
   \+cell_empty(Board, RowIdx, ColIdx),
   \+cell_can_climb(Board, RowIdx, ColIdx, TurtleStack),
   \+cell_can_push(Board, RowIdx, ColIdx, TurtleStack),
@@ -379,34 +397,34 @@ remove_from_nest(2, Nest1-Nest2, Turtle, Nest1-NewNest2) :-
 %% Handle chain reactions from pushing turtles
 %% No more turtles to push (no more chain reactions from pushing)
 move_normal(true, _-_, _, _-_, _, _, _, [], _, _-_, _-_).
+%% Handle chain reactions from pushing turtles
 %% Move TurtleStack off the board to the sides or to the end (with the turtle's own color) - return turtles to the nests and stop chain reaction
 %% Falling off the sides or the turtle's own end is allowed only for chain reactions from pushing turtles - the only moves that fail coordinates validation
 move_normal(true, _, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
-  last(TurtleStack, (Color-_)), % Get the color of the base turtle in the stack
+  last(TurtleStack, (Color-_)),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   \+valid_coords(Board, DestRowIdx, DestColIdx, Color),
   add_to_lists(Nest1-Nest2, TurtleStack, NewNest1-NewNest2),
   !.
 %% Move TurtleStack, making a scoring move
-%% OR Move DisplacedTurtleStack because it is able to move to the scoring cell - stop chain reaction
-%% For chain reaction handling see move_normal(true, ...) predicates
+%% OR Move DisplacedTurtleStack because it is able to make a scoring move - return turtles to the respective nests/scored and stop chain reaction
 move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
   last(TurtleStack, (Color-_)),
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_can_score(Board, DestRowIdx, DestColIdx, Color),
-  normal_move_score(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, NewScored1-NewScored2),
+  move_score(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, NewScored1-NewScored2),
   allowed_outside_board(ends, Color, TurtleStack, Scored1-Scored2, Nest1-Nest2, NewNest1-NewNest2, NewScored1-NewScored2),
   !.
 %% Move TurtleStack to the normal cell (empty cell)
 %% OR Move DisplacedTurtleStack because it is able to move to the empty cell - continue chain reaction
-move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+move_normal(_, Turn, _-_, Board, _-_, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, _-_, _-_) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_empty(Board, DestRowIdx, DestColIdx),
   normal_move_empty(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard),
   !.
 %% Move TurtleStack to the normal cell (occupied cell - climb top of stack)
 %% OR Move DisplacedTurtleStack because it is able to climb the top of next turtle stack - continue chain reaction
-move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
+move_normal(_, Turn, _-_, Board, _-_, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, _-_, _-_) :-
   dest_coords(RowIdx, ColIdx, Direction, DestRowIdx, DestColIdx),
   cell_can_climb(Board, DestRowIdx, DestColIdx, TurtleStack),
   normal_move_climb(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard),
@@ -418,8 +436,8 @@ move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direct
   cell_can_push(Board, DestRowIdx, DestColIdx, TurtleStack),
   normal_move_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
   !,
-  NewRowIdx is RowIdx + 1,
-  move_hatch(true, Board, NewRowIdx, DestColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2).
+  dest_coords(DestRowIdx, DestColIdx, Direction, NewRowIdx, NewColIdx), % Get chain reaction destination coords (chain reaction goes in the same direction)
+  move_normal(true, Turn, Nest1-Nest2, Board, Scored1-Scored2, NewRowIdx, NewColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).
 %% Move TurtleStack to the normal cell (occupied cell - climb and push stack)
 %% OR Move DisplacedTurtleStack because it is able to climb and push one of the turtles in the next turtle stack - continue chain reaction
 move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
@@ -427,8 +445,8 @@ move_normal(_, Turn, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direct
   cell_can_climb_push(Board, DestRowIdx, DestColIdx, TurtleStack),
   normal_move_climb_push(Board, RowIdx, ColIdx, DestRowIdx, DestColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
   !,
-  NewRowIdx is RowIdx + 1,
-  move_hatch(true, Board, NewRowIdx, DestColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2).
+  dest_coords(DestRowIdx, DestColIdx, Direction, NewRowIdx, NewColIdx), % Get chain reaction destination coords
+  move_normal(true, Turn, Nest1-Nest2, Board, Scored1-Scored2, NewRowIdx, NewColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2).
 %% Handles chain reactions from pushing turtles
 %% DisplacedTurtleStack is not able to climb, push, or climb and push the next turtle - return turtles to the nests and stop chain reaction
 move_normal(true, Nest1-Nest2, Board, Scored1-Scored2, RowIdx, ColIdx, Direction, TurtleStack, NewBoard, NewNest1-NewNest2, NewScored1-NewScored2) :-
