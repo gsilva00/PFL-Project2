@@ -309,7 +309,7 @@ move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Le
   valid_move(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level), Turtle-(hatch-ColIdx)),
   board_sizes(Board, Width, Length),
   nth1(Turn, [Length, 1], RowIdx),
-  move_hatch(false, Nest1-Nest2, Board, RowIdx, ColIdx, Turtle, NewBoard, NewNest1-NewNest2),
+  move_hatch(false, Nest1-Nest2, Board, RowIdx, ColIdx, [Turtle], NewBoard, NewNest1-NewNest2),
   remove_from_nest(Turn, Nest1-Nest2, Turtle, NewNest1-NewNest2),
   Turn1 is Turn rem 2 + 1, % Change turn
   !.
@@ -343,7 +343,7 @@ move_hatch(_, _-_, Board, RowIdx, ColIdx, TurtleStack, NewBoard, _-_) :-
 %% OR Move DisplacedTurtleStack because it is able to push next turtle stack - continue chain reaction
 move_hatch(_, Nest1-Nest2, Board, RowIdx, ColIdx, TurtleStack, NewBoard, NewNest1-NewNest2) :-
   cell_can_push(Board, RowIdx, ColIdx, TurtleStack),
-  hatch_move_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
+  move_push(Board, RowIdx, ColIdx, TurtleStack, NewBoard, DisplacedTurtleStack),
   !,
   NewRowIdx is RowIdx + 1,
   move_hatch(true, Nest1-Nest2, Board, NewRowIdx, ColIdx, DisplacedTurtleStack, NewBoard, NewNest1-NewNest2).

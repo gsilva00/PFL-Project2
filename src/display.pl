@@ -62,10 +62,12 @@ display_winner(Winner) :-
 %% Display the game state
 %% GameState is represented by the compound term - game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level).
 display_game(game_state(Turn, Nest1-Nest2, Board, Scored1-Scored2, Player1Name-Player1Level, Player2Name-Player2Level)) :-
+  write_ln('================================'),
+  display_nests(Player1Name, Player2Name, Nest1, Nest2),
   display_board(Board),
   display_score(Player1Name, Player2Name, Scored1, Scored2),
-  display_nests(Player1Name, Player2Name, Nest1, Nest2),
-  display_turn(Turn, Player1Name-Player1Level, Player2Name-Player2Level).
+  display_turn(Turn, Player1Name-Player1Level, Player2Name-Player2Level),
+  write_ln('================================').
 
 % add_1_ifnecessary(+Size, -Max)
 add_1_ifnecessary(0,1):- !.
